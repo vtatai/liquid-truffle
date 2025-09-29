@@ -64,9 +64,6 @@ class Lexer(private val reader: Reader, private val reportWhitespaceTokens: Bool
 
 	constructor(src: String, reportWhitespaceTokens: Boolean = false) : this(StringReader(src), reportWhitespaceTokens)
 	
-	// Getter for keywords (useful for testing)
-	fun getKeywords(): Set<String> = keywords
-	
 	fun lex(): List<Token> {
 		val tokens = mutableListOf<Token>()
 		fillBuffer() // Initial buffer fill

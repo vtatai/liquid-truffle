@@ -50,7 +50,6 @@ Desktop.ini
 *.temp
 *.swp
 *.swo
-*~
 
 # Logs
 *.log
@@ -151,20 +150,16 @@ target/
 
 # Scala
 *.class
-*.log
 
 # SBT
 .sbt/
 project/project/
 project/target/
-target/
 
 # Play Framework
 dist/
 /target/
 /server.pid
-project/target/
-project/project/
 
 # Scala IDE specific
 .scala_dependencies
@@ -189,13 +184,8 @@ project/project/
 .bazelrc
 bazel-*
 
-# Vim
-*.swp
-*.swo
-*~
 
 # Emacs
-*~
 \#*\#
 /.emacs.desktop
 /.emacs.desktop.lock
@@ -204,66 +194,25 @@ auto-save-list
 tramp
 .\#*
 
-# JetBrains IDEs
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# Android Studio
-*.iml
 .gradle
 /local.properties
 /.idea/workspace.xml
 /.idea/libraries
-.DS_Store
 /build
 /captures
 .externalNativeBuild
 .cxx
-local.properties
 
 # NDK
 obj/
 
-# IntelliJ IDEA
-.idea/
-*.iws
-*.iml
-*.ipr
-out/
-
-# Eclipse
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-# NetBeans
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-# VS Code
-.vscode/
-
 # OS generated files
-.DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
-Thumbs.db
 
 # Temporary files
-*.tmp
-*.temp
 *.bak
 *.backup
 *.orig
