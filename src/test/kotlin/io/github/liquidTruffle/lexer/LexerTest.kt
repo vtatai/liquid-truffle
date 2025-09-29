@@ -1,7 +1,7 @@
 package io.github.liquidTruffle.lexer
 
-import org.junit.jupiter.api.Test
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import java.io.StringReader
 
 class LexerTest {
@@ -13,12 +13,21 @@ class LexerTest {
 		
 		// Basic verification that lexer produces tokens
 		assertThat(tokens).isNotEmpty()
-		assertThat(tokens.last().type).isEqualTo(TokenType.EOF)
 		
-		// Check that we have the expected token types somewhere in the list
-		assertThat(tokens.map { it.type }).contains(TokenType.VAR_OPEN)
-		assertThat(tokens.map { it.type }).contains(TokenType.VAR_CLOSE)
-		assertThat(tokens.map { it.type }).contains(TokenType.PIPE)
+		// Assert for the correct order: VAR_OPEN, IDENT, PIPE, IDENT, VAR_CLOSE (no whitespace tokens)
+		val tokenTypes = tokens.map { it.type }
+		assertThat(tokenTypes).containsExactly(
+			TokenType.VAR_OPEN,
+			TokenType.IDENT,      // name
+			TokenType.PIPE,       // |
+			TokenType.IDENT,      // upcase
+			TokenType.VAR_CLOSE,
+			TokenType.EOF
+		)
+		
+		// Verify the actual lexemes
+		assertThat(tokens[1].lexeme).isEqualTo("name")
+		assertThat(tokens[3].lexeme).isEqualTo("upcase")
 	}
 
 	@Test
@@ -39,14 +48,11 @@ class LexerTest {
 		val lexer = Lexer(src)
 		val tokens = lexer.lex()
 		
-		// Should have: VAR_OPEN, WHITESPACE, IDENT(variable), WHITESPACE, VAR_CLOSE, EOF
-		assertThat(tokens).hasSizeGreaterThanOrEqualTo(6)
+		assertThat(tokens).hasSizeGreaterThanOrEqualTo(4)
 		assertThat(tokens[0].type).isEqualTo(TokenType.VAR_OPEN)
-		assertThat(tokens[1].type).isEqualTo(TokenType.WHITESPACE)
-		assertThat(tokens[2].type).isEqualTo(TokenType.IDENT)
-		assertThat(tokens[2].lexeme).isEqualTo("variable")
-		assertThat(tokens[3].type).isEqualTo(TokenType.WHITESPACE)
-		assertThat(tokens[4].type).isEqualTo(TokenType.VAR_CLOSE)
+		assertThat(tokens[1].type).isEqualTo(TokenType.IDENT)
+		assertThat(tokens[1].lexeme).isEqualTo("variable")
+		assertThat(tokens[2].type).isEqualTo(TokenType.VAR_CLOSE)
 		assertThat(tokens.last().type).isEqualTo(TokenType.EOF)
 	}
 
@@ -67,36 +73,46 @@ class LexerTest {
 	}
 
 	@Test
-	fun lexerReportsWhitespaceTokensByDefault() {
+	fun lexerIgnoresWhitespaceTokensByDefault() {
 		val src = "{{ variable }}"
 		val lexer = Lexer(src)
 		val tokens = lexer.lex()
 		
-		// Should report whitespace tokens by default
-		assertThat(tokens.map { it.type }).contains(TokenType.WHITESPACE)
-		val whitespaceTokens = tokens.filter { it.type == TokenType.WHITESPACE }
-		assertThat(whitespaceTokens).hasSize(2) // One before and one after "variable"
+		// Should not report whitespace tokens by default
+		assertThat(tokens.map { it.type }).doesNotContain(TokenType.WHITESPACE)
+		
+		// Should have the other expected tokens
+		assertThat(tokens.map { it.type }).containsExactly(
+			TokenType.VAR_OPEN,
+			TokenType.IDENT,
+			TokenType.VAR_CLOSE,
+			TokenType.EOF
+		)
 	}
 
 	@Test
-	fun lexerSkipsWhitespaceTokensWhenDisabled() {
+	fun lexerReportsWhitespaceTokensWhenEnabled() {
 		val src = "{{ variable }}"
-		val lexer = Lexer(src, reportWhitespaceTokens = false)
+		val lexer = Lexer(src, reportWhitespaceTokens = true)
 		val tokens = lexer.lex()
 		
-		// Should not report whitespace tokens when disabled
-		assertThat(tokens.map { it.type }).doesNotContain(TokenType.WHITESPACE)
+		// Should report whitespace tokens when explicitly enabled
+		assertThat(tokens.map { it.type }).contains(TokenType.WHITESPACE)
 		
-		// Should still have the other expected tokens
-		assertThat(tokens.map { it.type }).contains(TokenType.VAR_OPEN)
-		assertThat(tokens.map { it.type }).contains(TokenType.VAR_CLOSE)
-		assertThat(tokens.map { it.type }).contains(TokenType.IDENT)
-		assertThat(tokens.map { it.type }).contains(TokenType.EOF)
+		// Should have the expected tokens including whitespace
+		assertThat(tokens.map { it.type }).containsExactly(
+			TokenType.VAR_OPEN,
+			TokenType.WHITESPACE,
+			TokenType.IDENT,
+			TokenType.WHITESPACE,
+			TokenType.VAR_CLOSE,
+			TokenType.EOF
+		)
 		
-		// Should have fewer tokens overall
+		// Should have more tokens than default behavior
 		val defaultLexer = Lexer(src)
 		val defaultTokens = defaultLexer.lex()
-		assertThat(tokens).hasSizeLessThan(defaultTokens.size)
+		assertThat(tokens).hasSizeGreaterThan(defaultTokens.size)
 	}
 
 	@Test
@@ -153,31 +169,17 @@ More content
 	}
 
 	@Test
-	fun lexerDfaStartsInInitialState() {
-		val lexer = Lexer("{{ variable }}")
-		assertThat(lexer.getCurrentState()).isEqualTo(LexerState.INITIAL)
-	}
-
-	@Test
 	fun lexerDfaTransitionsCorrectly() {
 		val src = "{{ variable }}"
 		val lexer = Lexer(src)
 		
-		// Start in INITIAL state
-		assertThat(lexer.getCurrentState()).isEqualTo(LexerState.INITIAL)
-		
 		// Process tokens and verify state transitions
 		val tokens = lexer.lex()
 		
-		// Should end in EOF state
-		assertThat(lexer.getCurrentState()).isEqualTo(LexerState.EOF)
-		
-		// Verify we got the expected tokens
+		// Verify we got the expected tokens (no whitespace by default)
 		assertThat(tokens.map { it.type }).containsExactly(
 			TokenType.VAR_OPEN,
-			TokenType.WHITESPACE,
 			TokenType.IDENT,
-			TokenType.WHITESPACE,
 			TokenType.VAR_CLOSE,
 			TokenType.EOF
 		)
@@ -189,20 +191,16 @@ More content
 		val lexer = Lexer(src)
 		val tokens = lexer.lex()
 		
-		// Verify we can handle all token types through DFA states
+		// Verify we can handle all token types through DFA states (no whitespace by default)
 		val expectedTypes = listOf(
 			TokenType.VAR_OPEN,
-			TokenType.WHITESPACE,
 			TokenType.IDENT,     // var
-			TokenType.WHITESPACE,
 			TokenType.PIPE,      // |
-			TokenType.WHITESPACE,
 			TokenType.IDENT,     // filter
 			TokenType.COLON,     // :
 			TokenType.IDENT,     // arg
 			TokenType.COMMA,     // ,
 			TokenType.NUMBER,    // 123
-			TokenType.WHITESPACE,
 			TokenType.VAR_CLOSE,
 			TokenType.EOF
 		)

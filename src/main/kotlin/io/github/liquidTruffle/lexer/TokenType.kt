@@ -12,6 +12,7 @@ enum class TokenType {
 	PIPE,          // |
 	COLON,         // :
 	COMMA,         // ,
+    DOT,           // .
 	WHITESPACE,
-	EOF
+	EOF,
 }
