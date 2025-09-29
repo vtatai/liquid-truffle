@@ -7,12 +7,19 @@ enum class TokenType {
 	TAG_OPEN,      // {%
 	TAG_CLOSE,     // %}
 	IDENT,
+	KEYWORD,       // Reserved keywords like if, for, unless, etc.
 	STRING,
 	NUMBER,
 	PIPE,          // |
 	COLON,         // :
 	COMMA,         // ,
     DOT,           // .
+	GT,            // >
+	LT,            // <
+	GTE,           // >=
+	LTE,           // <=
+	EQ,            // ==
+	NE,            // !=
 	WHITESPACE,
 	EOF,
 }

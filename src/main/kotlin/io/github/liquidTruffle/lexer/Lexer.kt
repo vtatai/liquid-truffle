@@ -17,6 +17,26 @@ class Lexer(private val reader: Reader, private val reportWhitespaceTokens: Bool
 	private var position = 0 // Global position counter
 	private var eof = false
     private var currentMode = LexerMode.IN_TEXT
+    
+    // Liquid reserved keywords
+    private val keywords = setOf(
+        // Control flow tags
+        "assign", "capture", "case", "comment", "cycle", "for", "in", "break", "continue",
+        "if", "include", "raw", "unless", "endfor", "endif", "endunless", "endcase",
+        "else", "elsif", "when", "tablerow", "endtablerow", "increment", "decrement",
+        "liquid", "echo", "render", "section", "endsection", "schema", "form",
+        "paginate", "endpaginate", "layout", "block", "endblock", "extends",
+        // Logical operators
+        "and", "or", "not", "contains", "equals", "greater_than", "less_than",
+        "greater_than_or_equal_to", "less_than_or_equal_to", "not_equals",
+        // Other keywords
+        "true", "false", "nil", "null", "empty", "blank", "default", "with",
+        "limit", "offset", "reversed", "sort", "where", "group_by", "order",
+        "first", "last", "size", "join", "split", "strip", "strip_html",
+        "strip_newlines", "newline_to_br", "escape", "url_encode", "url_decode",
+        "base64_encode", "base64_decode", "hmac_sha1", "hmac_sha256", "md5",
+        "sha1", "sha256", "date", "time", "now", "today", "yesterday", "tomorrow"
+    )
 
     private val objectOpenMatcher = TokenMatcherAdapter({peek2("{{")}, ::processObjOpen)
     private val objectCloseMatcher = TokenMatcherAdapter({peek2("}}")}, ::processObjClose)
@@ -31,12 +51,21 @@ class Lexer(private val reader: Reader, private val reportWhitespaceTokens: Bool
     private val numberMatcher = TokenMatcherAdapter({peek().isDigit()}, ::processNumber)
     private val identMatcher = TokenMatcherAdapter({isIdentStart(peek())}, ::processIdentifier)
     private val textMatcher = TokenMatcherAdapter({peek() != '\u0000'}, ::processText)
+    private val gteMatcher = TokenMatcherAdapter({peek2(">=")}, ::processGTE)
+    private val lteMatcher = TokenMatcherAdapter({peek2("<=")}, ::processLTE)
+    private val eqMatcher = TokenMatcherAdapter({peek2("==")}, ::processEQ)
+    private val neMatcher = TokenMatcherAdapter({peek2("!=")}, ::processNE)
+    private val gtMatcher = TokenMatcherAdapter({peek() == '>'}, ::processGT)
+    private val ltMatcher = TokenMatcherAdapter({peek() == '<'}, ::processLT)
 
     private val textModeMatchers = listOf(objectOpenMatcher, tagOpenMatcher, textMatcher)
-    private val objectModeMatchers = listOf(objectCloseMatcher, whitespaceMatcher, stringMatcher, numberMatcher, dotMatcher, pipeMatcher, commaMatcher, colonMatcher, identMatcher)
-    private val tagModeMatchers = listOf(tagCloseMatcher, whitespaceMatcher, stringMatcher, numberMatcher, dotMatcher, pipeMatcher, commaMatcher, identMatcher)
+    private val objectModeMatchers = listOf(objectCloseMatcher, whitespaceMatcher, stringMatcher, numberMatcher, dotMatcher, pipeMatcher, commaMatcher, colonMatcher, gteMatcher, lteMatcher, eqMatcher, neMatcher, gtMatcher, ltMatcher, identMatcher)
+    private val tagModeMatchers = listOf(tagCloseMatcher, whitespaceMatcher, stringMatcher, numberMatcher, dotMatcher, pipeMatcher, commaMatcher, colonMatcher, gteMatcher, lteMatcher, eqMatcher, neMatcher, gtMatcher, ltMatcher, identMatcher)
 
-    constructor(src: String, reportWhitespaceTokens: Boolean = false) : this(StringReader(src), reportWhitespaceTokens)
+	constructor(src: String, reportWhitespaceTokens: Boolean = false) : this(StringReader(src), reportWhitespaceTokens)
+	
+	// Getter for keywords (useful for testing)
+	fun getKeywords(): Set<String> = keywords
 	
 	fun lex(): List<Token> {
 		val tokens = mutableListOf<Token>()
@@ -200,13 +229,54 @@ class Lexer(private val reader: Reader, private val reportWhitespaceTokens: Bool
 	private fun processIdentifier(): Token {
 		val startPos = position
 		val lexeme = collectIdent()
-		return Token(TokenType.IDENT, lexeme, startPos, position)
+		val tokenType = if (keywords.contains(lexeme)) {
+			TokenType.KEYWORD
+		} else {
+			TokenType.IDENT
+		}
+		return Token(tokenType, lexeme, startPos, position)
 	}
 	
 	private fun processText(): Token {
 		val startPos = position
 		val lexeme = collectText()
 		return Token(TokenType.TEXT, lexeme, startPos, position)
+	}
+
+	private fun processGT(): Token {
+		val startPos = position
+		advance(1)
+		return Token(TokenType.GT, ">", startPos, position)
+	}
+
+	private fun processLT(): Token {
+		val startPos = position
+		advance(1)
+		return Token(TokenType.LT, "<", startPos, position)
+	}
+
+	private fun processGTE(): Token {
+		val startPos = position
+		advance(2)
+		return Token(TokenType.GTE, ">=", startPos, position)
+	}
+
+	private fun processLTE(): Token {
+		val startPos = position
+		advance(2)
+		return Token(TokenType.LTE, "<=", startPos, position)
+	}
+
+	private fun processEQ(): Token {
+		val startPos = position
+		advance(2)
+		return Token(TokenType.EQ, "==", startPos, position)
+	}
+
+	private fun processNE(): Token {
+		val startPos = position
+		advance(2)
+		return Token(TokenType.NE, "!=", startPos, position)
 	}
 
     // Buffer management methods

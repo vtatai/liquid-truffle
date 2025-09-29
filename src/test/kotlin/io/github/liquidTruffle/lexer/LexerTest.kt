@@ -232,4 +232,110 @@ More content
 		assertThat(textTokens[0].lexeme).isEqualTo("Hello ")
 		assertThat(textTokens[1].lexeme).isEqualTo(" World")
 	}
+
+	@Test
+	fun lexerRecognizesKeywords() {
+		val src = "{% if condition %}Hello{% endif %}"
+		val lexer = Lexer(src)
+		val tokens = lexer.lex()
+		
+		// Should recognize 'if' and 'endif' as keywords
+		val keywordTokens = tokens.filter { it.type == TokenType.KEYWORD }
+		assertThat(keywordTokens).hasSize(2)
+		assertThat(keywordTokens[0].lexeme).isEqualTo("if")
+		assertThat(keywordTokens[1].lexeme).isEqualTo("endif")
+		
+		// Should have other expected tokens
+		assertThat(tokens.map { it.type }).contains(TokenType.TAG_OPEN)
+		assertThat(tokens.map { it.type }).contains(TokenType.TAG_CLOSE)
+		assertThat(tokens.map { it.type }).contains(TokenType.IDENT) // "condition"
+		assertThat(tokens.map { it.type }).contains(TokenType.TEXT) // "Hello"
+	}
+
+	@Test
+	fun lexerDistinguishesKeywordsFromIdentifiers() {
+		val src = "{% for item in items %}{{ item.name }}{% endfor %}"
+		val lexer = Lexer(src)
+		val tokens = lexer.lex()
+		
+		// Should recognize 'for', 'in', and 'endfor' as keywords
+		val keywordTokens = tokens.filter { it.type == TokenType.KEYWORD }
+		assertThat(keywordTokens).hasSize(3)
+		assertThat(keywordTokens.map { it.lexeme }).containsExactlyInAnyOrder("for", "in", "endfor")
+		
+		// Should recognize 'item', 'items', 'name' as identifiers
+		val identTokens = tokens.filter { it.type == TokenType.IDENT }
+		assertThat(identTokens).hasSize(4)
+		assertThat(identTokens.map { it.lexeme }).containsExactlyInAnyOrder("item", "items", "item", "name")
+	}
+
+	@Test
+	fun lexerRecognizesLogicalOperators() {
+		val src = "{% if user and user.active %}{{ user.name }}{% endif %}"
+		val lexer = Lexer(src)
+		val tokens = lexer.lex()
+		
+		// Should recognize 'if', 'and', 'endif' as keywords
+		val keywordTokens = tokens.filter { it.type == TokenType.KEYWORD }
+		assertThat(keywordTokens).hasSize(3)
+		assertThat(keywordTokens.map { it.lexeme }).containsExactlyInAnyOrder("if", "and", "endif")
+		
+		// Should recognize 'user', 'active', 'name' as identifiers
+		val identTokens = tokens.filter { it.type == TokenType.IDENT }
+		assertThat(identTokens).hasSize(5)
+		assertThat(identTokens.map { it.lexeme }).containsExactlyInAnyOrder("user", "user", "active", "user", "name")
+	}
+
+	@Test
+	fun lexerRecognizesBooleanKeywords() {
+		val src = "{% if true or false %}{{ nil }}{% endif %}"
+		val lexer = Lexer(src)
+		val tokens = lexer.lex()
+		
+		// Should recognize 'if', 'true', 'or', 'false', 'nil', 'endif' as keywords
+		val keywordTokens = tokens.filter { it.type == TokenType.KEYWORD }
+		assertThat(keywordTokens).hasSize(6)
+		assertThat(keywordTokens.map { it.lexeme }).containsExactly("if", "true", "or", "false", "nil", "endif")
+	}
+
+	@Test
+	fun lexerRecognizesFilterKeywords() {
+		val src = "{{ text | strip | escape }}"
+		val lexer = Lexer(src)
+		val tokens = lexer.lex()
+		
+		// Should recognize 'strip' and 'escape' as keywords (filter names)
+		val keywordTokens = tokens.filter { it.type == TokenType.KEYWORD }
+		assertThat(keywordTokens).hasSize(2)
+		assertThat(keywordTokens.map { it.lexeme }).containsExactly("strip", "escape")
+		
+		// Should recognize 'text' as identifier
+		val identTokens = tokens.filter { it.type == TokenType.IDENT }
+		assertThat(identTokens).hasSize(1)
+		assertThat(identTokens[0].lexeme).isEqualTo("text")
+	}
+
+	@Test
+	fun lexerRecognizesComplexKeywordUsage() {
+		val src = """{% for item in collection limit: 10 %}
+			{% if item.active and item.price > 0 %}
+				{{ item.name | strip | escape }}
+			{% endif %}
+		{% endfor %}"""
+		val lexer = Lexer(src)
+		val tokens = lexer.lex()
+		
+		// Should recognize multiple keywords
+		val keywordTokens = tokens.filter { it.type == TokenType.KEYWORD }
+		val keywordLexemes = keywordTokens.map { it.lexeme }
+		
+		assertThat(keywordLexemes).contains("for", "in", "limit", "if", "and", "endif", "endfor")
+		assertThat(keywordLexemes).contains("strip", "escape")
+		
+		// Should recognize identifiers
+		val identTokens = tokens.filter { it.type == TokenType.IDENT }
+		val identLexemes = identTokens.map { it.lexeme }
+		
+		assertThat(identLexemes).contains("item", "collection", "active", "price", "name")
+	}
 }
