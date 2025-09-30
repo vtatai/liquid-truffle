@@ -2,6 +2,7 @@ package io.github.liquidTruffle.lexer
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.io.StringReader
 
 class LexerTest {
@@ -338,4 +339,22 @@ More content
 		
 		assertThat(identLexemes).contains("item", "collection", "active", "price", "name")
 	}
+
+    @Test
+    fun lexerThrowsErrorInObject() {
+        val src = "{{ % }}"
+        val lexer = Lexer(src)
+        assertThrows<LexerException> {
+            lexer.lex()
+        }
+    }
+
+    @Test
+    fun lexerThrowsErrorInTag() {
+        val src = "{% %%}"
+        val lexer = Lexer(src)
+        assertThrows<LexerException> {
+            lexer.lex()
+        }
+    }
 }

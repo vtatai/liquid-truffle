@@ -57,10 +57,15 @@ class Lexer(private val reader: Reader, private val reportWhitespaceTokens: Bool
     private val neMatcher = TokenMatcherAdapter({peek2("!=")}, ::processNE)
     private val gtMatcher = TokenMatcherAdapter({peek() == '>'}, ::processGT)
     private val ltMatcher = TokenMatcherAdapter({peek() == '<'}, ::processLT)
+    private val errorMatcher = TokenMatcherAdapter({true}, { throw LexerException("Invalid code" + peek()) })
 
     private val textModeMatchers = listOf(objectOpenMatcher, tagOpenMatcher, textMatcher)
-    private val objectModeMatchers = listOf(objectCloseMatcher, whitespaceMatcher, stringMatcher, numberMatcher, dotMatcher, pipeMatcher, commaMatcher, colonMatcher, gteMatcher, lteMatcher, eqMatcher, neMatcher, gtMatcher, ltMatcher, identMatcher)
-    private val tagModeMatchers = listOf(tagCloseMatcher, whitespaceMatcher, stringMatcher, numberMatcher, dotMatcher, pipeMatcher, commaMatcher, colonMatcher, gteMatcher, lteMatcher, eqMatcher, neMatcher, gtMatcher, ltMatcher, identMatcher)
+    private val objectModeMatchers = listOf(objectCloseMatcher, whitespaceMatcher, stringMatcher, numberMatcher,
+        dotMatcher, pipeMatcher, commaMatcher, colonMatcher, gteMatcher, lteMatcher, eqMatcher, neMatcher, gtMatcher,
+        ltMatcher, identMatcher, errorMatcher)
+    private val tagModeMatchers = listOf(tagCloseMatcher, whitespaceMatcher, stringMatcher, numberMatcher, dotMatcher,
+        pipeMatcher, commaMatcher, colonMatcher, gteMatcher, lteMatcher, eqMatcher, neMatcher, gtMatcher, ltMatcher,
+        identMatcher, errorMatcher)
 
 	constructor(src: String, reportWhitespaceTokens: Boolean = false) : this(StringReader(src), reportWhitespaceTokens)
 	
