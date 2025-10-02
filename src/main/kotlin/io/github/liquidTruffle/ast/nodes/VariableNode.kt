@@ -16,6 +16,10 @@ class VariableNode(
 		}
 		return current
 	}
+	
+	// Expose fields for testing purposes
+	val variableName: String get() = this.name
+	val filterSpecs: List<FilterSpec> get() = this.filters
 
 	data class FilterSpec(
 		val name: String,

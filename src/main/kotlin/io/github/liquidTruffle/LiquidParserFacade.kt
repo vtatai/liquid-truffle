@@ -2,13 +2,13 @@ package io.github.liquidTruffle
 
 import com.oracle.truffle.api.TruffleLanguage
 import io.github.liquidTruffle.ast.AstNode
-import io.github.liquidTruffle.lexer.Lexer
-import io.github.liquidTruffle.lexer.Token
-import io.github.liquidTruffle.lexer.TokenType
 import io.github.liquidTruffle.ast.nodes.IfNode
 import io.github.liquidTruffle.ast.nodes.LiquidRootNode
 import io.github.liquidTruffle.ast.nodes.TextNode
 import io.github.liquidTruffle.ast.nodes.VariableNode
+import io.github.liquidTruffle.lexer.Lexer
+import io.github.liquidTruffle.lexer.Token
+import io.github.liquidTruffle.lexer.TokenType
 import java.io.Reader
 import java.io.StringReader
 
@@ -17,32 +17,36 @@ class LiquidParserFacade {
 	private var p = 0
 
 	fun parse(language: TruffleLanguage<*>, reader: Reader): LiquidRootNode {
+        return LiquidRootNode(language, parseNodes(reader).toTypedArray())
+	}
+	
+	fun parseNodes(reader: Reader): List<AstNode> {
 		tokens = Lexer(reader).lex()
 		p = 0
-		val nodes = mutableListOf<AstNode>()
-		while (!match(TokenType.EOF)) {
-			when {
-				check(TokenType.TEXT) -> nodes.add(TextNode(advance().lexeme))
-				match(TokenType.VAR_OPEN) -> {
-					nodes.add(parseVariable())
-					expect(TokenType.VAR_CLOSE, "Expected '}}'")
-				}
-				match(TokenType.TAG_OPEN) -> {
-					val tag = parseTag()
-					expect(TokenType.TAG_CLOSE, "Expected '%}'")
-					if (tag != null) nodes.add(tag)
-				}
-				check(TokenType.WHITESPACE) -> {
-					// keep whitespace outside tags/vars as text
-					nodes.add(TextNode(advance().lexeme))
-				}
-				else -> {
-					// fallback consume
-					nodes.add(TextNode(advance().lexeme))
-				}
-			}
-		}
-		return LiquidRootNode(language, nodes.toTypedArray())
+        val nodes = mutableListOf<AstNode>()
+        while (!match(TokenType.EOF)) {
+            when {
+                check(TokenType.TEXT) -> nodes.add(TextNode(advance().lexeme))
+                match(TokenType.VAR_OPEN) -> {
+                    nodes.add(parseVariable())
+                    expect(TokenType.VAR_CLOSE, "Expected '}}'")
+                }
+                match(TokenType.TAG_OPEN) -> {
+                    val tag = parseTag()
+                    expect(TokenType.TAG_CLOSE, "Expected '%}'")
+                    if (tag != null) nodes.add(tag)
+                }
+                check(TokenType.WHITESPACE) -> {
+                    // keep whitespace outside tags/vars as text
+                    nodes.add(TextNode(advance().lexeme))
+                }
+                else -> {
+                    // fallback consume
+                    nodes.add(TextNode(advance().lexeme))
+                }
+            }
+        }
+		return nodes
 	}
 
 	fun parse(language: TruffleLanguage<*>, src: String): LiquidRootNode {

@@ -15,4 +15,7 @@ class LiquidRootNode(
 			node.executeGeneric(frame)?.toString() ?: ""
 		}
 	}
+	
+	// Expose children for testing purposes
+	val childrenNodes: Array<AstNode> get() = this.children
 }
