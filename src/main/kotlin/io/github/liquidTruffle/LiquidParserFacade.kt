@@ -2,8 +2,12 @@ package io.github.liquidTruffle
 
 import com.oracle.truffle.api.TruffleLanguage
 import io.github.liquidTruffle.ast.AstNode
+import io.github.liquidTruffle.ast.nodes.BooleanLiteralNode
 import io.github.liquidTruffle.ast.nodes.IfNode
 import io.github.liquidTruffle.ast.nodes.LiquidRootNode
+import io.github.liquidTruffle.ast.nodes.NilLiteralNode
+import io.github.liquidTruffle.ast.nodes.NumberLiteralNode
+import io.github.liquidTruffle.ast.nodes.StringLiteralNode
 import io.github.liquidTruffle.ast.nodes.TextNode
 import io.github.liquidTruffle.ast.nodes.VariableNode
 import io.github.liquidTruffle.lexer.Lexer
@@ -62,7 +66,7 @@ class LiquidParserFacade {
 			if (!match(TokenType.PIPE)) break
 			skipSpace()
 			val filterName = ident()
-			val args = mutableListOf<Any?>()
+			val args = mutableListOf<AstNode>()
 			skipSpace()
 			if (match(TokenType.COLON)) {
 				do {
@@ -115,16 +119,29 @@ class LiquidParserFacade {
 	}
 
 	private fun ident(): String {
-		val t = expect(TokenType.IDENT, "Expected identifier")
+		val t = when {
+			match(TokenType.IDENT) -> prev()
+			match(TokenType.KEYWORD) -> prev()
+			else -> throw RuntimeException("Expected identifier or keyword")
+		}
 		return t.lexeme
 	}
 
-	private fun literal(): Any? {
+	private fun literal(): AstNode {
 		return when {
-			match(TokenType.STRING) -> prev().lexeme
-			match(TokenType.NUMBER) -> prev().lexeme.toInt()
-			match(TokenType.IDENT) -> prev().lexeme
-			else -> ""
+			match(TokenType.STRING) -> StringLiteralNode(prev().lexeme)
+			match(TokenType.NUMBER) -> NumberLiteralNode(prev().lexeme.toInt())
+			match(TokenType.KEYWORD) -> {
+				val keyword = prev().lexeme
+				when (keyword) {
+					"true" -> BooleanLiteralNode(true)
+					"false" -> BooleanLiteralNode(false)
+					"nil", "null" -> NilLiteralNode()
+					else -> StringLiteralNode(keyword) // Treat other keywords as strings
+				}
+			}
+			match(TokenType.IDENT) -> StringLiteralNode(prev().lexeme)
+			else -> StringLiteralNode("")
 		}
 	}
 

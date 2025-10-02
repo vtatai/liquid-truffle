@@ -10,14 +10,15 @@ class VariableNode(
 	private val name: String,
 	private val filters: List<FilterSpec>
 ) : AstNode() {
-	
-	override fun executeGeneric(frame: VirtualFrame): Any? {
-		var current = LiquidRuntime.getVariable(frame, name)
-		for (filter in filters) {
-			current = LiquidRuntime.applyFilter(frame, filter.name, current, filter.args)
-		}
-		return current
-	}
+
+    override fun executeGeneric(frame: VirtualFrame): Any? {
+        var current = LiquidRuntime.getVariable(frame, name)
+        for (filter in filters) {
+            val evaluatedArgs = filter.args.map { it.executeGeneric(frame) }
+            current = LiquidRuntime.applyFilter(frame, filter.name, current, evaluatedArgs)
+        }
+        return current
+    }
 	
 	// Expose fields for testing purposes
 	val variableName: String get() = this.name
@@ -25,6 +26,6 @@ class VariableNode(
 
 	data class FilterSpec(
 		val name: String,
-		val args: List<Any?> = emptyList()
+		val args: List<AstNode> = emptyList()
 	)
 }
