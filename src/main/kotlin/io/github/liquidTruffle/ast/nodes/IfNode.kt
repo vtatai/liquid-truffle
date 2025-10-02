@@ -3,7 +3,9 @@ package io.github.liquidTruffle.ast.nodes
 import io.github.liquidTruffle.ast.AstNode
 import io.github.liquidTruffle.runtime.LiquidRuntime
 import com.oracle.truffle.api.frame.VirtualFrame
+import com.oracle.truffle.api.nodes.NodeInfo
 
+@NodeInfo(description = "Represents conditional if statements that render content based on variable truthiness")
 class IfNode(
 	private val variableName: String,
 	private val body: Array<AstNode>

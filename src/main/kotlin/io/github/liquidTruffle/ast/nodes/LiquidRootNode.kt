@@ -4,7 +4,9 @@ import io.github.liquidTruffle.ast.AstNode
 import com.oracle.truffle.api.frame.VirtualFrame
 import com.oracle.truffle.api.nodes.RootNode
 import com.oracle.truffle.api.TruffleLanguage
+import com.oracle.truffle.api.nodes.NodeInfo
 
+@NodeInfo(description = "Root node of the Liquid template AST that orchestrates execution of child nodes")
 class LiquidRootNode(
 	language: TruffleLanguage<*>,
 	private val children: Array<AstNode>

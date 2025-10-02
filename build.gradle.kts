@@ -21,7 +21,8 @@ dependencies {
 	compileOnly("org.graalvm.truffle:truffle-dsl-processor:24.1.1")
 	annotationProcessor("org.graalvm.truffle:truffle-dsl-processor:24.1.1")
 	implementation("com.fasterxml.jackson.core:jackson-databind:2.17.1")
-	
+    implementation("org.graalvm.polyglot:polyglot:24.1.1")
+
 	testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.2")
 	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")

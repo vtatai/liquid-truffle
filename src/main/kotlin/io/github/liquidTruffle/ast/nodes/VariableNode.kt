@@ -3,7 +3,9 @@ package io.github.liquidTruffle.ast.nodes
 import io.github.liquidTruffle.ast.AstNode
 import io.github.liquidTruffle.runtime.LiquidRuntime
 import com.oracle.truffle.api.frame.VirtualFrame
+import com.oracle.truffle.api.nodes.NodeInfo
 
+@NodeInfo(description = "Represents variable references with optional filters in Liquid templates")
 class VariableNode(
 	private val name: String,
 	private val filters: List<FilterSpec>
