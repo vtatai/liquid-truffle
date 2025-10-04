@@ -1,6 +1,7 @@
 package io.github.liquidTruffle
 
 import io.github.liquidTruffle.ast.nodes.BooleanLiteralNode
+import io.github.liquidTruffle.ast.nodes.LiquidObjectNode
 import io.github.liquidTruffle.ast.nodes.NilLiteralNode
 import io.github.liquidTruffle.ast.nodes.NumberLiteralNode
 import io.github.liquidTruffle.ast.nodes.StringLiteralNode
@@ -16,11 +17,13 @@ class PrimitiveTypeParserTest {
 		val parser = LiquidParserFacade()
 		val nodes = parser.parseNodes(StringReader("{{ var | upcase:'hello' }}"))
 		
-		// Should have a VariableNode with a StringLiteralNode as filter argument
+		// Should have a LiquidObjectNode with a VariableNode child
 		assertThat(nodes).hasSize(1)
-		assertThat(nodes[0]).isInstanceOf(VariableNode::class.java)
+		assertThat(nodes[0]).isInstanceOf(LiquidObjectNode::class.java)
 		
-		val variableNode = nodes[0] as VariableNode
+		val objectNode = nodes[0] as LiquidObjectNode
+		assertThat(objectNode.childNode).isInstanceOf(VariableNode::class.java)
+		val variableNode = objectNode.childNode as VariableNode
 		assertThat(variableNode.filterSpecs).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args[0]).isInstanceOf(StringLiteralNode::class.java)
@@ -35,9 +38,11 @@ class PrimitiveTypeParserTest {
 		val nodes = parser.parseNodes(StringReader("{{ count | times: 5 }}"))
 		
 		assertThat(nodes).hasSize(1)
-		assertThat(nodes[0]).isInstanceOf(VariableNode::class.java)
+		assertThat(nodes[0]).isInstanceOf(LiquidObjectNode::class.java)
 		
-		val variableNode = nodes[0] as VariableNode
+		val objectNode = nodes[0] as LiquidObjectNode
+		assertThat(objectNode.childNode).isInstanceOf(VariableNode::class.java)
+		val variableNode = objectNode.childNode as VariableNode
 		assertThat(variableNode.filterSpecs).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args[0]).isInstanceOf(NumberLiteralNode::class.java)
@@ -52,9 +57,11 @@ class PrimitiveTypeParserTest {
 		val nodes = parser.parseNodes(StringReader("{{ flag | default:true }}"))
 		
 		assertThat(nodes).hasSize(1)
-		assertThat(nodes[0]).isInstanceOf(VariableNode::class.java)
+		assertThat(nodes[0]).isInstanceOf(LiquidObjectNode::class.java)
 		
-		val variableNode = nodes[0] as VariableNode
+		val objectNode = nodes[0] as LiquidObjectNode
+		assertThat(objectNode.childNode).isInstanceOf(VariableNode::class.java)
+		val variableNode = objectNode.childNode as VariableNode
 		assertThat(variableNode.filterSpecs).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args[0]).isInstanceOf(BooleanLiteralNode::class.java)
@@ -69,9 +76,11 @@ class PrimitiveTypeParserTest {
 		val nodes = parser.parseNodes(StringReader("{{ value | default:nil }}"))
 		
 		assertThat(nodes).hasSize(1)
-		assertThat(nodes[0]).isInstanceOf(VariableNode::class.java)
+		assertThat(nodes[0]).isInstanceOf(LiquidObjectNode::class.java)
 		
-		val variableNode = nodes[0] as VariableNode
+		val objectNode = nodes[0] as LiquidObjectNode
+		assertThat(objectNode.childNode).isInstanceOf(VariableNode::class.java)
+		val variableNode = objectNode.childNode as VariableNode
 		assertThat(variableNode.filterSpecs).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args[0]).isInstanceOf(NilLiteralNode::class.java)
@@ -83,9 +92,11 @@ class PrimitiveTypeParserTest {
 		val nodes = parser.parseNodes(StringReader("{{ text | slice:0,10,true }}"))
 		
 		assertThat(nodes).hasSize(1)
-		assertThat(nodes[0]).isInstanceOf(VariableNode::class.java)
+		assertThat(nodes[0]).isInstanceOf(LiquidObjectNode::class.java)
 		
-		val variableNode = nodes[0] as VariableNode
+		val objectNode = nodes[0] as LiquidObjectNode
+		assertThat(objectNode.childNode).isInstanceOf(VariableNode::class.java)
+		val variableNode = objectNode.childNode as VariableNode
 		assertThat(variableNode.filterSpecs).hasSize(1)
 		assertThat(variableNode.filterSpecs[0].args).hasSize(3)
 		

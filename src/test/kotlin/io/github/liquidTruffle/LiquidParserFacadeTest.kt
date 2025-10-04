@@ -1,5 +1,6 @@
 package io.github.liquidTruffle
 
+import io.github.liquidTruffle.ast.nodes.LiquidObjectNode
 import io.github.liquidTruffle.ast.nodes.TextNode
 import io.github.liquidTruffle.ast.nodes.VariableNode
 import org.junit.jupiter.api.Test
@@ -46,9 +47,11 @@ class LiquidParserFacadeTest {
 		val textNode1 = nodes[0] as TextNode
 		assertThat(textNode1.textContent).isEqualTo("Hello ")
 		
-		// Second child should be VariableNode with "name"
-		assertThat(nodes[1]).isInstanceOf(VariableNode::class.java)
-		val variableNode = nodes[1] as VariableNode
+		// Second child should be LiquidObjectNode with VariableNode child
+		assertThat(nodes[1]).isInstanceOf(LiquidObjectNode::class.java)
+		val objectNode = nodes[1] as LiquidObjectNode
+		assertThat(objectNode.childNode).isInstanceOf(VariableNode::class.java)
+		val variableNode = objectNode.childNode as VariableNode
 		assertThat(variableNode.variableName).isEqualTo("name")
 		assertThat(variableNode.filterSpecs).isEmpty()
 		

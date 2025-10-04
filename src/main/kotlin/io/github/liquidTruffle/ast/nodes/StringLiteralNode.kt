@@ -8,7 +8,7 @@ import com.oracle.truffle.api.nodes.NodeInfo
 class StringLiteralNode(private val value: String) : AstNode() {
 	
 	override fun executeGeneric(frame: VirtualFrame): String = value
-	
+
 	// Expose value for testing purposes
 	val stringValue: String get() = this.value
 }

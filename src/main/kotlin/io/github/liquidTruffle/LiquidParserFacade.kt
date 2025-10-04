@@ -4,6 +4,7 @@ import com.oracle.truffle.api.TruffleLanguage
 import io.github.liquidTruffle.ast.AstNode
 import io.github.liquidTruffle.ast.nodes.BooleanLiteralNode
 import io.github.liquidTruffle.ast.nodes.IfNode
+import io.github.liquidTruffle.ast.nodes.LiquidObjectNode
 import io.github.liquidTruffle.ast.nodes.LiquidRootNode
 import io.github.liquidTruffle.ast.nodes.NilLiteralNode
 import io.github.liquidTruffle.ast.nodes.NumberLiteralNode
@@ -32,7 +33,7 @@ class LiquidParserFacade {
             when {
                 check(TokenType.TEXT) -> nodes.add(TextNode(advance().lexeme))
                 match(TokenType.VAR_OPEN) -> {
-                    nodes.add(parseVariable())
+                    nodes.add(parseObject())
                     expect(TokenType.VAR_CLOSE, "Expected '}}'")
                 }
                 match(TokenType.TAG_OPEN) -> {
@@ -55,6 +56,28 @@ class LiquidParserFacade {
 
 	fun parse(language: TruffleLanguage<*>, src: String): LiquidRootNode {
 		return parse(language, StringReader(src))
+	}
+
+	private fun parseObject(): AstNode {
+		skipSpace()
+		
+		// Check if this is a literal or a variable
+		val child = when {
+			check(TokenType.STRING) || check(TokenType.NUMBER) || check(TokenType.KEYWORD) -> {
+				// Parse as literal
+				literal()
+			}
+			check(TokenType.IDENT) -> {
+				// Parse as variable
+				parseVariable()
+			}
+			else -> {
+				// Fallback to literal parsing
+				literal()
+			}
+		}
+		
+		return LiquidObjectNode(child)
 	}
 
 	private fun parseVariable(): AstNode {
@@ -95,7 +118,7 @@ class LiquidParserFacade {
 						body.add(TextNode(advance().lexeme))
 					}
 					match(TokenType.VAR_OPEN) -> {
-						body.add(parseVariable())
+						body.add(parseObject())
 						expect(TokenType.VAR_CLOSE, "Expected '}}'")
 					}
 					match(TokenType.TAG_OPEN) -> {
