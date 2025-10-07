@@ -1,19 +1,10 @@
 package io.github.liquidTruffle.parser
 
-import com.oracle.truffle.api.TruffleLanguage
-import io.github.liquidTruffle.parser.ast.AstNode
-import io.github.liquidTruffle.parser.ast.nodes.BooleanLiteralNode
-import io.github.liquidTruffle.parser.ast.nodes.IfNode
-import io.github.liquidTruffle.parser.ast.nodes.LiquidObjectNode
-import io.github.liquidTruffle.parser.ast.nodes.LiquidRootNode
-import io.github.liquidTruffle.parser.ast.nodes.NilLiteralNode
-import io.github.liquidTruffle.parser.ast.nodes.NumberLiteralNode
-import io.github.liquidTruffle.parser.ast.nodes.StringLiteralNode
-import io.github.liquidTruffle.parser.ast.nodes.TextNode
-import io.github.liquidTruffle.parser.ast.nodes.VariableNode
 import io.github.liquidTruffle.lexer.Lexer
 import io.github.liquidTruffle.lexer.Token
 import io.github.liquidTruffle.lexer.TokenType
+import io.github.liquidTruffle.parser.ast.AstNode
+import io.github.liquidTruffle.parser.ast.nodes.*
 import java.io.Reader
 import java.io.StringReader
 
@@ -21,7 +12,7 @@ class LiquidParserFacade {
 	private lateinit var tokens: List<Token>
 	private var p = 0
 
-	fun parse(language: TruffleLanguage<*>, reader: Reader): LiquidRootNode {
+	fun parse(language: LiquidLanguage, reader: Reader): LiquidRootNode {
         return LiquidRootNode(language, parseNodes(reader).toTypedArray())
 	}
 	
@@ -53,7 +44,7 @@ class LiquidParserFacade {
 		return nodes
 	}
 
-	fun parse(language: TruffleLanguage<*>, src: String): LiquidRootNode {
+	fun parse(language: LiquidLanguage, src: String): LiquidRootNode {
 		return parse(language, StringReader(src))
 	}
 

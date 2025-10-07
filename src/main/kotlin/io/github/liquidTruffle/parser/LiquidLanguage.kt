@@ -10,13 +10,15 @@ import com.oracle.truffle.api.TruffleLanguage
 	defaultMimeType = LiquidLanguage.MIME,
 	characterMimeTypes = [LiquidLanguage.MIME]
 )
-class LiquidLanguage : TruffleLanguage<Any?>() {
+class LiquidLanguage : TruffleLanguage<LiquidLanguage.Context>() {
 	companion object {
 		const val ID = "liquid"
 		const val MIME = "application/x-liquid"
 	}
 
-	override fun createContext(env: Env): Any? = Any()
+    class Context
+
+    override fun createContext(env: Env): Context = Context()
 
 	override fun parse(request: ParsingRequest): CallTarget {
 		val source = request.source
