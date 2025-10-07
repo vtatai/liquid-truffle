@@ -1,4 +1,4 @@
-package io.github.liquidTruffle
+package io.github.liquidTruffle.parser
 
 import com.oracle.truffle.api.CallTarget
 import com.oracle.truffle.api.TruffleLanguage

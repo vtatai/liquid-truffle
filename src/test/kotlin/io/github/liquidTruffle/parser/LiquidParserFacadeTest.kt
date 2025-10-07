@@ -1,8 +1,8 @@
-package io.github.liquidTruffle
+package io.github.liquidTruffle.parser
 
-import io.github.liquidTruffle.ast.nodes.LiquidObjectNode
-import io.github.liquidTruffle.ast.nodes.TextNode
-import io.github.liquidTruffle.ast.nodes.VariableNode
+import io.github.liquidTruffle.parser.ast.nodes.LiquidObjectNode
+import io.github.liquidTruffle.parser.ast.nodes.TextNode
+import io.github.liquidTruffle.parser.ast.nodes.VariableNode
 import org.junit.jupiter.api.Test
 import org.assertj.core.api.Assertions.assertThat
 import java.io.StringReader

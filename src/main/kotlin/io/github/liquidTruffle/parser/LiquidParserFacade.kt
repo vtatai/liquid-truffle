@@ -1,16 +1,16 @@
-package io.github.liquidTruffle
+package io.github.liquidTruffle.parser
 
 import com.oracle.truffle.api.TruffleLanguage
-import io.github.liquidTruffle.ast.AstNode
-import io.github.liquidTruffle.ast.nodes.BooleanLiteralNode
-import io.github.liquidTruffle.ast.nodes.IfNode
-import io.github.liquidTruffle.ast.nodes.LiquidObjectNode
-import io.github.liquidTruffle.ast.nodes.LiquidRootNode
-import io.github.liquidTruffle.ast.nodes.NilLiteralNode
-import io.github.liquidTruffle.ast.nodes.NumberLiteralNode
-import io.github.liquidTruffle.ast.nodes.StringLiteralNode
-import io.github.liquidTruffle.ast.nodes.TextNode
-import io.github.liquidTruffle.ast.nodes.VariableNode
+import io.github.liquidTruffle.parser.ast.AstNode
+import io.github.liquidTruffle.parser.ast.nodes.BooleanLiteralNode
+import io.github.liquidTruffle.parser.ast.nodes.IfNode
+import io.github.liquidTruffle.parser.ast.nodes.LiquidObjectNode
+import io.github.liquidTruffle.parser.ast.nodes.LiquidRootNode
+import io.github.liquidTruffle.parser.ast.nodes.NilLiteralNode
+import io.github.liquidTruffle.parser.ast.nodes.NumberLiteralNode
+import io.github.liquidTruffle.parser.ast.nodes.StringLiteralNode
+import io.github.liquidTruffle.parser.ast.nodes.TextNode
+import io.github.liquidTruffle.parser.ast.nodes.VariableNode
 import io.github.liquidTruffle.lexer.Lexer
 import io.github.liquidTruffle.lexer.Token
 import io.github.liquidTruffle.lexer.TokenType
@@ -37,9 +37,8 @@ class LiquidParserFacade {
                     expect(TokenType.VAR_CLOSE, "Expected '}}'")
                 }
                 match(TokenType.TAG_OPEN) -> {
-                    val tag = parseTag()
+                    nodes.add(parseTag())
                     expect(TokenType.TAG_CLOSE, "Expected '%}'")
-                    if (tag != null) nodes.add(tag)
                 }
                 check(TokenType.WHITESPACE) -> {
                     // keep whitespace outside tags/vars as text
@@ -103,7 +102,7 @@ class LiquidParserFacade {
 		return VariableNode(name, filters)
 	}
 
-	private fun parseTag(): AstNode? {
+	private fun parseTag(): AstNode {
 		skipSpace()
 		val kw = ident()
 		skipSpace()
@@ -133,8 +132,7 @@ class LiquidParserFacade {
 			}
 			return IfNode(varName, body.toTypedArray())
 		}
-		// unknown tag -> ignore
-		return null
+		throw LiquidParserException("Unsupported / unexpected tag cmmand $kw")
 	}
 
 	private fun skipSpace() {

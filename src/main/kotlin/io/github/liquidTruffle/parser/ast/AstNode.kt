@@ -1,4 +1,4 @@
-package io.github.liquidTruffle.ast
+package io.github.liquidTruffle.parser.ast
 
 import com.oracle.truffle.api.frame.VirtualFrame
 import com.oracle.truffle.api.nodes.Node
