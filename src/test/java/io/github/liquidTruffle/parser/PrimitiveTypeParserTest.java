@@ -25,10 +25,10 @@ public class PrimitiveTypeParserTest {
         Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(VariableNode.class);
         VariableNode variableNode = (VariableNode) objectNode.getChildNode();
         Assertions.assertThat(variableNode.getFilterSpecs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs().get(0)).isInstanceOf(StringLiteralNode.class);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args()).hasSize(1);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args().get(0)).isInstanceOf(StringLiteralNode.class);
         
-        StringLiteralNode stringNode = (StringLiteralNode) variableNode.getFilterSpecs().get(0).getArgs().get(0);
+        StringLiteralNode stringNode = (StringLiteralNode) variableNode.getFilterSpecs().get(0).args().get(0);
         Assertions.assertThat(stringNode.getStringValue()).isEqualTo("hello");
     }
     
@@ -44,10 +44,10 @@ public class PrimitiveTypeParserTest {
         Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(VariableNode.class);
         VariableNode variableNode = (VariableNode) objectNode.getChildNode();
         Assertions.assertThat(variableNode.getFilterSpecs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs().get(0)).isInstanceOf(NumberLiteralNode.class);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args()).hasSize(1);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args().get(0)).isInstanceOf(NumberLiteralNode.class);
         
-        NumberLiteralNode numberNode = (NumberLiteralNode) variableNode.getFilterSpecs().get(0).getArgs().get(0);
+        NumberLiteralNode numberNode = (NumberLiteralNode) variableNode.getFilterSpecs().get(0).args().get(0);
         Assertions.assertThat(numberNode.getNumberValue()).isEqualTo(5);
     }
     
@@ -63,10 +63,10 @@ public class PrimitiveTypeParserTest {
         Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(VariableNode.class);
         VariableNode variableNode = (VariableNode) objectNode.getChildNode();
         Assertions.assertThat(variableNode.getFilterSpecs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs().get(0)).isInstanceOf(BooleanLiteralNode.class);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args()).hasSize(1);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args().get(0)).isInstanceOf(BooleanLiteralNode.class);
         
-        BooleanLiteralNode booleanNode = (BooleanLiteralNode) variableNode.getFilterSpecs().get(0).getArgs().get(0);
+        BooleanLiteralNode booleanNode = (BooleanLiteralNode) variableNode.getFilterSpecs().get(0).args().get(0);
         Assertions.assertThat(booleanNode.getBooleanValue()).isTrue();
     }
     
@@ -82,8 +82,8 @@ public class PrimitiveTypeParserTest {
         Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(VariableNode.class);
         VariableNode variableNode = (VariableNode) objectNode.getChildNode();
         Assertions.assertThat(variableNode.getFilterSpecs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs().get(0)).isInstanceOf(NilLiteralNode.class);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args()).hasSize(1);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args().get(0)).isInstanceOf(NilLiteralNode.class);
     }
     
     @Test
@@ -98,21 +98,21 @@ public class PrimitiveTypeParserTest {
         Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(VariableNode.class);
         VariableNode variableNode = (VariableNode) objectNode.getChildNode();
         Assertions.assertThat(variableNode.getFilterSpecs()).hasSize(1);
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs()).hasSize(3);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args()).hasSize(3);
         
         // First argument should be NumberLiteralNode (0)
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs().get(0)).isInstanceOf(NumberLiteralNode.class);
-        NumberLiteralNode numberNode1 = (NumberLiteralNode) variableNode.getFilterSpecs().get(0).getArgs().get(0);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args().get(0)).isInstanceOf(NumberLiteralNode.class);
+        NumberLiteralNode numberNode1 = (NumberLiteralNode) variableNode.getFilterSpecs().get(0).args().get(0);
         Assertions.assertThat(numberNode1.getNumberValue()).isEqualTo(0);
         
         // Second argument should be NumberLiteralNode (10)
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs().get(1)).isInstanceOf(NumberLiteralNode.class);
-        NumberLiteralNode numberNode2 = (NumberLiteralNode) variableNode.getFilterSpecs().get(0).getArgs().get(1);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args().get(1)).isInstanceOf(NumberLiteralNode.class);
+        NumberLiteralNode numberNode2 = (NumberLiteralNode) variableNode.getFilterSpecs().get(0).args().get(1);
         Assertions.assertThat(numberNode2.getNumberValue()).isEqualTo(10);
         
         // Third argument should be BooleanLiteralNode (true)
-        Assertions.assertThat(variableNode.getFilterSpecs().get(0).getArgs().get(2)).isInstanceOf(BooleanLiteralNode.class);
-        BooleanLiteralNode booleanNode = (BooleanLiteralNode) variableNode.getFilterSpecs().get(0).getArgs().get(2);
+        Assertions.assertThat(variableNode.getFilterSpecs().get(0).args().get(2)).isInstanceOf(BooleanLiteralNode.class);
+        BooleanLiteralNode booleanNode = (BooleanLiteralNode) variableNode.getFilterSpecs().get(0).args().get(2);
         Assertions.assertThat(booleanNode.getBooleanValue()).isTrue();
     }
 }

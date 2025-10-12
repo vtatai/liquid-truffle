@@ -2,7 +2,7 @@ package io.github.liquidTruffle.lexer;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+
 import java.io.StringReader;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +18,7 @@ public class LexerTest {
         Assertions.assertThat(tokens).isNotEmpty();
         
         // Assert for the correct order: VAR_OPEN, IDENT, PIPE, IDENT, VAR_CLOSE (no whitespace tokens)
-        List<TokenType> tokenTypes = tokens.stream().map(Token::getType).collect(Collectors.toList());
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).containsExactly(
             TokenType.VAR_OPEN,
             TokenType.IDENT,      // name
@@ -29,8 +29,8 @@ public class LexerTest {
         );
         
         // Verify the actual lexemes
-        Assertions.assertThat(tokens.get(1).getLexeme()).isEqualTo("name");
-        Assertions.assertThat(tokens.get(3).getLexeme()).isEqualTo("upcase");
+        Assertions.assertThat(tokens.get(1).lexeme()).isEqualTo("name");
+        Assertions.assertThat(tokens.get(3).lexeme()).isEqualTo("upcase");
     }
 
     @Test
@@ -40,9 +40,9 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         Assertions.assertThat(tokens).hasSize(2);
-        Assertions.assertThat(tokens.get(0).getType()).isEqualTo(TokenType.TEXT);
-        Assertions.assertThat(tokens.get(0).getLexeme()).isEqualTo("Hello World");
-        Assertions.assertThat(tokens.get(tokens.size() - 1).getType()).isEqualTo(TokenType.EOF);
+        Assertions.assertThat(tokens.get(0).type()).isEqualTo(TokenType.TEXT);
+        Assertions.assertThat(tokens.get(0).lexeme()).isEqualTo("Hello World");
+        Assertions.assertThat(tokens.get(tokens.size() - 1).type()).isEqualTo(TokenType.EOF);
     }
 
     @Test
@@ -52,11 +52,11 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         Assertions.assertThat(tokens).hasSizeGreaterThanOrEqualTo(4);
-        Assertions.assertThat(tokens.get(0).getType()).isEqualTo(TokenType.VAR_OPEN);
-        Assertions.assertThat(tokens.get(1).getType()).isEqualTo(TokenType.IDENT);
-        Assertions.assertThat(tokens.get(1).getLexeme()).isEqualTo("variable");
-        Assertions.assertThat(tokens.get(2).getType()).isEqualTo(TokenType.VAR_CLOSE);
-        Assertions.assertThat(tokens.get(tokens.size() - 1).getType()).isEqualTo(TokenType.EOF);
+        Assertions.assertThat(tokens.get(0).type()).isEqualTo(TokenType.VAR_OPEN);
+        Assertions.assertThat(tokens.get(1).type()).isEqualTo(TokenType.IDENT);
+        Assertions.assertThat(tokens.get(1).lexeme()).isEqualTo("variable");
+        Assertions.assertThat(tokens.get(2).type()).isEqualTo(TokenType.VAR_CLOSE);
+        Assertions.assertThat(tokens.get(tokens.size() - 1).type()).isEqualTo(TokenType.EOF);
     }
 
     @Test
@@ -69,11 +69,11 @@ public class LexerTest {
         Assertions.assertThat(tokens).hasSizeGreaterThanOrEqualTo(8);
         
         // Count pipes
-        long pipeCount = tokens.stream().map(Token::getType).filter(t -> t == TokenType.PIPE).count();
+        long pipeCount = tokens.stream().map(Token::type).filter(t -> t == TokenType.PIPE).count();
         Assertions.assertThat(pipeCount).isEqualTo(2);
         
         // Count identifiers
-        long identCount = tokens.stream().map(Token::getType).filter(t -> t == TokenType.IDENT).count();
+        long identCount = tokens.stream().map(Token::type).filter(t -> t == TokenType.IDENT).count();
         Assertions.assertThat(identCount).isEqualTo(3);
     }
 
@@ -84,11 +84,11 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         // Should not report whitespace tokens by default
-        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.getType() == TokenType.WHITESPACE);
+        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.type() == TokenType.WHITESPACE);
         Assertions.assertThat(hasWhitespace).isFalse();
         
         // Should have the other expected tokens
-        List<TokenType> tokenTypes = tokens.stream().map(Token::getType).collect(Collectors.toList());
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).containsExactly(
             TokenType.VAR_OPEN,
             TokenType.IDENT,
@@ -104,11 +104,11 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         // Should report whitespace tokens when explicitly enabled
-        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.getType() == TokenType.WHITESPACE);
+        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.type() == TokenType.WHITESPACE);
         Assertions.assertThat(hasWhitespace).isTrue();
         
         // Should have the expected tokens including whitespace
-        List<TokenType> tokenTypes = tokens.stream().map(Token::getType).collect(Collectors.toList());
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).containsExactly(
             TokenType.VAR_OPEN,
             TokenType.WHITESPACE,
@@ -131,13 +131,13 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         // Should not report whitespace tokens
-        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.getType() == TokenType.WHITESPACE);
+        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.type() == TokenType.WHITESPACE);
         Assertions.assertThat(hasWhitespace).isFalse();
         
         // Should have IDENT tokens for "Hello" and "World"
-        List<Token> textTokens = tokens.stream().filter(t -> t.getType() == TokenType.TEXT).collect(Collectors.toList());
+        List<Token> textTokens = tokens.stream().filter(t -> t.type() == TokenType.TEXT).collect(Collectors.toList());
         Assertions.assertThat(textTokens).hasSize(1);
-        Assertions.assertThat(textTokens.get(0).getLexeme()).isEqualTo("Hello World");
+        Assertions.assertThat(textTokens.get(0).lexeme()).isEqualTo("Hello World");
     }
 
     @Test
@@ -152,12 +152,12 @@ public class LexerTest {
         List<Token> stringTokens = stringLexer.lex();
         
         Assertions.assertThat(tokens).hasSameSizeAs(stringTokens);
-        List<TokenType> tokenTypes = tokens.stream().map(Token::getType).collect(Collectors.toList());
-        List<TokenType> stringTokenTypes = stringTokens.stream().map(Token::getType).collect(Collectors.toList());
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        List<TokenType> stringTokenTypes = stringTokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).isEqualTo(stringTokenTypes);
         
-        List<String> lexemes = tokens.stream().map(Token::getLexeme).collect(Collectors.toList());
-        List<String> stringLexemes = stringTokens.stream().map(Token::getLexeme).collect(Collectors.toList());
+        List<String> lexemes = tokens.stream().map(Token::lexeme).collect(Collectors.toList());
+        List<String> stringLexemes = stringTokens.stream().map(Token::lexeme).collect(Collectors.toList());
         Assertions.assertThat(lexemes).isEqualTo(stringLexemes);
     }
 
@@ -169,10 +169,10 @@ public class LexerTest {
         
         // Should handle multi-line input correctly
         Assertions.assertThat(tokens).isNotEmpty();
-        Assertions.assertThat(tokens.get(tokens.size() - 1).getType()).isEqualTo(TokenType.EOF);
+        Assertions.assertThat(tokens.get(tokens.size() - 1).type()).isEqualTo(TokenType.EOF);
         
         // Should have all expected token types
-        List<TokenType> tokenTypes = tokens.stream().map(Token::getType).collect(Collectors.toList());
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).contains(TokenType.VAR_OPEN);
         Assertions.assertThat(tokenTypes).contains(TokenType.VAR_CLOSE);
         Assertions.assertThat(tokenTypes).contains(TokenType.TAG_OPEN);
@@ -187,13 +187,13 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         // Should recognize 'if' and 'endif' as keywords
-        List<Token> keywordTokens = tokens.stream().filter(t -> t.getType() == TokenType.KEYWORD).collect(Collectors.toList());
+        List<Token> keywordTokens = tokens.stream().filter(t -> t.type() == TokenType.KEYWORD).collect(Collectors.toList());
         Assertions.assertThat(keywordTokens).hasSize(2);
-        Assertions.assertThat(keywordTokens.get(0).getLexeme()).isEqualTo("if");
-        Assertions.assertThat(keywordTokens.get(1).getLexeme()).isEqualTo("endif");
+        Assertions.assertThat(keywordTokens.get(0).lexeme()).isEqualTo("if");
+        Assertions.assertThat(keywordTokens.get(1).lexeme()).isEqualTo("endif");
         
         // Should have other expected tokens
-        List<TokenType> tokenTypes = tokens.stream().map(Token::getType).collect(Collectors.toList());
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).contains(TokenType.TAG_OPEN);
         Assertions.assertThat(tokenTypes).contains(TokenType.TAG_CLOSE);
         Assertions.assertThat(tokenTypes).contains(TokenType.IDENT); // "condition"
@@ -207,9 +207,9 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         // Should recognize 'if', 'true', 'or', 'false', 'nil', 'endif' as keywords
-        List<Token> keywordTokens = tokens.stream().filter(t -> t.getType() == TokenType.KEYWORD).collect(Collectors.toList());
+        List<Token> keywordTokens = tokens.stream().filter(t -> t.type() == TokenType.KEYWORD).collect(Collectors.toList());
         Assertions.assertThat(keywordTokens).hasSize(6);
-        List<String> keywordLexemes = keywordTokens.stream().map(Token::getLexeme).collect(Collectors.toList());
+        List<String> keywordLexemes = keywordTokens.stream().map(Token::lexeme).collect(Collectors.toList());
         Assertions.assertThat(keywordLexemes).containsExactly("if", "true", "or", "false", "nil", "endif");
     }
 
@@ -217,23 +217,13 @@ public class LexerTest {
     public void lexerThrowsErrorInObject() {
         String src = "{{ % }}";
         Lexer lexer = new Lexer(src);
-        Assertions.assertThatThrownBy(new ThrowingCallable() {
-            @Override
-            public void call() throws Throwable {
-                lexer.lex();
-            }
-        }).isInstanceOf(LexerException.class);
+        Assertions.assertThatThrownBy(lexer::lex).isInstanceOf(LexerException.class);
     }
 
     @Test
     public void lexerThrowsErrorInTag() {
         String src = "{% %%}";
         Lexer lexer = new Lexer(src);
-        Assertions.assertThatThrownBy(new ThrowingCallable() {
-            @Override
-            public void call() throws Throwable {
-                lexer.lex();
-            }
-        }).isInstanceOf(LexerException.class);
+        Assertions.assertThatThrownBy(lexer::lex).isInstanceOf(LexerException.class);
     }
 }

@@ -24,9 +24,4 @@ public class LiquidRootNode extends RootNode {
         }
         return result.toString();
     }
-    
-    // Expose children for testing purposes
-    public AstNode[] getChildrenNodes() {
-        return this.children;
-    }
 }

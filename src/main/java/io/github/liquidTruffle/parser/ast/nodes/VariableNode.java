@@ -22,10 +22,10 @@ public class VariableNode extends AstNode {
         Object current = LiquidRuntime.getVariable(frame, name);
         for (FilterSpec filter : filters) {
             List<Object> evaluatedArgs = new ArrayList<>();
-            for (AstNode arg : filter.getArgs()) {
+            for (AstNode arg : filter.args()) {
                 evaluatedArgs.add(arg.executeGeneric(frame));
             }
-            current = LiquidRuntime.applyFilter(frame, filter.getName(), current, evaluatedArgs);
+            current = LiquidRuntime.applyFilter(frame, filter.name(), current, evaluatedArgs);
         }
         return current;
     }
@@ -39,21 +39,10 @@ public class VariableNode extends AstNode {
         return this.filters;
     }
 
-    public static class FilterSpec {
-        private final String name;
-        private final List<AstNode> args;
-
-        public FilterSpec(String name, List<AstNode> args) {
-            this.name = name;
-            this.args = args != null ? args : new ArrayList<>();
+    public record FilterSpec(String name, List<AstNode> args) {
+            public FilterSpec(String name, List<AstNode> args) {
+                this.name = name;
+                this.args = args != null ? args : new ArrayList<>();
+            }
         }
-
-        public String getName() {
-            return name;
-        }
-
-        public List<AstNode> getArgs() {
-            return args;
-        }
-    }
 }

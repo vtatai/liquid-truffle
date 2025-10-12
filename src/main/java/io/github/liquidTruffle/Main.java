@@ -58,7 +58,8 @@ public class Main {
         if (s == null || s.isEmpty()) return new HashMap<>();
         try {
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(s, new TypeReference<Map<String, Object>>() {});
+            return mapper.readValue(s, new TypeReference<>() {
+            });
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

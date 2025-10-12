@@ -8,7 +8,6 @@ public class Lexer {
     private final Reader reader;
     private final boolean reportWhitespaceTokens;
     private final char[] buffer = new char[4096]; // Buffer for reading from Reader
-    private int bufferStart = 0;
     private int bufferEnd = 0;
     private int bufferPos = 0;
     private int position = 0; // Global position counter
@@ -54,7 +53,7 @@ public class Lexer {
 
         while (!eof || bufferPos < bufferEnd) {
             Token token = processCurrentState();
-            if (reportWhitespaceTokens || token.getType() != TokenType.WHITESPACE) {
+            if (reportWhitespaceTokens || token.type() != TokenType.WHITESPACE) {
                 tokens.add(token);
             }
             fillBuffer();
@@ -65,16 +64,11 @@ public class Lexer {
     }
     
     private Token processCurrentState() {
-        switch (currentMode) {
-            case IN_TEXT:
-                return processTextMode();
-            case IN_TAG:
-                return processTagMode();
-            case IN_OBJ:
-                return processObjectMode();
-            default:
-                throw new LexerException("Unknown lexer mode: " + currentMode);
-        }
+        return switch (currentMode) {
+            case IN_TEXT -> processTextMode();
+            case IN_TAG -> processTagMode();
+            case IN_OBJ -> processObjectMode();
+        };
     }
 
     private Token processTextMode() {
@@ -221,7 +215,7 @@ public class Lexer {
         }
         
         // Fallback for single character
-        if (result.length() == 0 && (!eof || bufferPos < bufferEnd)) {
+        if (result.isEmpty() && (!eof || bufferPos < bufferEnd)) {
             result.append(peek());
             advance(1);
         }
@@ -350,7 +344,6 @@ public class Lexer {
     // Buffer management methods
     private void fillBuffer() {
         if (bufferPos >= bufferEnd && !eof) {
-            bufferStart = position;
             bufferPos = 0;
             try {
                 int charsRead = reader.read(buffer);
@@ -376,9 +369,6 @@ public class Lexer {
         if (bufferPos + s.length() > bufferEnd) {
             // Need to check across buffer boundary
             return peekString(s.length()).equals(s);
-        }
-        if (bufferPos + s.length() > bufferEnd) {
-            return false;
         }
         char[] target = s.toCharArray();
         for (int i = 0; i < s.length(); i++) {

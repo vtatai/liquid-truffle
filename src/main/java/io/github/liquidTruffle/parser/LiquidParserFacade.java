@@ -24,7 +24,7 @@ public class LiquidParserFacade {
         List<AstNode> nodes = new ArrayList<>();
         while (!match(TokenType.EOF)) {
             if (check(TokenType.TEXT)) {
-                nodes.add(new TextNode(advance().getLexeme()));
+                nodes.add(new TextNode(advance().lexeme()));
             } else if (match(TokenType.VAR_OPEN)) {
                 nodes.add(parseObject());
                 expect(TokenType.VAR_CLOSE, "Expected '}}'");
@@ -33,10 +33,10 @@ public class LiquidParserFacade {
                 expect(TokenType.TAG_CLOSE, "Expected '%}'");
             } else if (check(TokenType.WHITESPACE)) {
                 // keep whitespace outside tags/vars as text
-                nodes.add(new TextNode(advance().getLexeme()));
+                nodes.add(new TextNode(advance().lexeme()));
             } else {
                 // fallback consume
-                nodes.add(new TextNode(advance().getLexeme()));
+                nodes.add(new TextNode(advance().lexeme()));
             }
         }
         return nodes;
@@ -92,15 +92,18 @@ public class LiquidParserFacade {
         skipSpace();
         String kw = ident();
         skipSpace();
+        if (kw.isBlank()) {
+            return null;
+        }
         if ("if".equals(kw)) {
             String varName = ident();
             expect(TokenType.TAG_CLOSE, "Expected '%}' after if condition");
             List<AstNode> body = new ArrayList<>();
             while (!(matchSeq(TokenType.TAG_OPEN, TokenType.IDENT, TokenType.TAG_CLOSE) && 
-                     prev(1).getLexeme().equals("endif"))) {
+                     prev(1).lexeme().equals("endif"))) {
                 if (check(TokenType.EOF)) break;
                 if (check(TokenType.TEXT) || check(TokenType.WHITESPACE)) {
-                    body.add(new TextNode(advance().getLexeme()));
+                    body.add(new TextNode(advance().lexeme()));
                 } else if (match(TokenType.VAR_OPEN)) {
                     body.add(parseObject());
                     expect(TokenType.VAR_CLOSE, "Expected '}}'");
@@ -109,7 +112,7 @@ public class LiquidParserFacade {
                     expect(TokenType.TAG_CLOSE, "Expected '%}'");
                     if (nested != null) body.add(nested);
                 } else {
-                    body.add(new TextNode(advance().getLexeme()));
+                    body.add(new TextNode(advance().lexeme()));
                 }
             }
             return new IfNode(varName, body.toArray(new AstNode[0]));
@@ -130,36 +133,31 @@ public class LiquidParserFacade {
         } else {
             throw new RuntimeException("Expected identifier or keyword");
         }
-        return t.getLexeme();
+        return t.lexeme();
     }
 
     private AstNode literal() {
         if (match(TokenType.STRING)) {
-            return new StringLiteralNode(prev().getLexeme());
+            return new StringLiteralNode(prev().lexeme());
         } else if (match(TokenType.NUMBER)) {
-            return new NumberLiteralNode(Integer.parseInt(prev().getLexeme()));
+            return new NumberLiteralNode(Integer.parseInt(prev().lexeme()));
         } else if (match(TokenType.KEYWORD)) {
-            String keyword = prev().getLexeme();
-            switch (keyword) {
-                case "true":
-                    return new BooleanLiteralNode(true);
-                case "false":
-                    return new BooleanLiteralNode(false);
-                case "nil":
-                case "null":
-                    return new NilLiteralNode();
-                default:
-                    return new StringLiteralNode(keyword); // Treat other keywords as strings
-            }
+            String keyword = prev().lexeme();
+            return switch (keyword) {
+                case "true" -> new BooleanLiteralNode(true);
+                case "false" -> new BooleanLiteralNode(false);
+                case "nil", "null" -> new NilLiteralNode();
+                default -> new StringLiteralNode(keyword); // Treat other keywords as strings
+            };
         } else if (match(TokenType.IDENT)) {
-            return new StringLiteralNode(prev().getLexeme());
+            return new StringLiteralNode(prev().lexeme());
         } else {
             return new StringLiteralNode("");
         }
     }
 
     private boolean check(TokenType t) {
-        return peek().getType() == t;
+        return peek().type() == t;
     }
 
     private boolean match(TokenType t) {
@@ -182,9 +180,9 @@ public class LiquidParserFacade {
         }
     }
 
-    private Token expect(TokenType t, String msg) {
+    private void expect(TokenType t, String msg) {
         if (!check(t)) throw new RuntimeException(msg + " at token " + peek());
-        return advance();
+        advance();
     }
 
     private Token advance() {
