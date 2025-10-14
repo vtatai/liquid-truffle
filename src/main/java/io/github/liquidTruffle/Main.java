@@ -1,11 +1,9 @@
 package io.github.liquidTruffle;
 
-import io.github.liquidTruffle.filters.BuiltinFilters;
-import io.github.liquidTruffle.filters.Filter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.liquidTruffle.parser.LiquidLanguage;
-import io.github.liquidTruffle.parser.LiquidParserFacade;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -31,13 +29,14 @@ public class Main {
         
         Map<String, Object> vars = parseJson(cli.get("vars"));
 
-        LiquidParserFacade parser = new LiquidParserFacade();
-        var root = parser.parse(new LiquidLanguage(), template);
-        var ct = root.getCallTarget();
-        Map<String, Filter> filters = new HashMap<>();
-        BuiltinFilters.installInto(filters);
-        Object result = ct.call(vars, filters);
-        System.out.print(result);
+        try (Context ctx = Context.newBuilder("liquid")
+                .allowAllAccess(true)
+                .build()) {
+            
+            // For now, just test with a simple template without variables
+            Value result = ctx.eval("liquid", template);
+            System.out.print(result.asString());
+        }
     }
 
     private static Map<String, String> parseArgs(String[] args) {
