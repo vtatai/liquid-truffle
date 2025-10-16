@@ -2,8 +2,8 @@ package io.github.liquidTruffle.lexer;
 
 public enum TokenType {
     TEXT,
-    VAR_OPEN,      // {{
-    VAR_CLOSE,     // }}
+    OBJECT_OPEN,      // {{
+    OBJECT_CLOSE,     // }}
     TAG_OPEN,      // {%
     TAG_CLOSE,     // %}
     IDENT,

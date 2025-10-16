@@ -6,19 +6,27 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(description = "Represents Liquid objects that hold a child object, which can be either a literal or a variable")
 public class LiquidObjectNode extends AstNode {
-    private final AstNode child;
-    
-    public LiquidObjectNode(AstNode child) {
-        this.child = child;
+    @Child
+    private AstNode initialNode;
+    @Children
+    private FilterNode[] filters;
+
+    public LiquidObjectNode(AstNode initialNode, FilterNode[] filters) {
+        this.initialNode = initialNode;
+        this.filters = filters;
     }
-    
+
     @Override
     public Object executeGeneric(VirtualFrame frame) {
-        return child.executeGeneric(frame);
+        return initialNode.executeGeneric(frame);
     }
-    
+
+    public FilterNode[] getFilters() {
+        return filters;
+    }
+
     // Expose child for testing purposes
     public AstNode getChildNode() {
-        return this.child;
+        return this.initialNode;
     }
 }

@@ -5,14 +5,18 @@ import io.github.liquidTruffle.lexer.Token;
 import io.github.liquidTruffle.lexer.TokenType;
 import io.github.liquidTruffle.parser.ast.AstNode;
 import io.github.liquidTruffle.parser.ast.nodes.*;
+
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class LiquidParserFacade {
     private List<Token> tokens;
     private int p = 0;
+    private Map<String, FilterFunction> filterFunctions = Map.of(
+            "append", new FilterFunction("append", params -> params[0].toString() + params[1].toString()));
 
     public LiquidRootNode parse(LiquidLanguage language, Reader reader) {
         return new LiquidRootNode(language, parseNodes(reader).toArray(new AstNode[0]));
@@ -25,9 +29,8 @@ public class LiquidParserFacade {
         while (!match(TokenType.EOF)) {
             if (check(TokenType.TEXT)) {
                 nodes.add(new TextNode(advance().lexeme()));
-            } else if (match(TokenType.VAR_OPEN)) {
+            } else if (match(TokenType.OBJECT_OPEN)) {
                 nodes.add(parseObject());
-                expect(TokenType.VAR_CLOSE, "Expected '}}'");
             } else if (match(TokenType.TAG_OPEN)) {
                 nodes.add(parseTag());
                 expect(TokenType.TAG_CLOSE, "Expected '%}'");
@@ -56,36 +59,44 @@ public class LiquidParserFacade {
             child = literal();
         } else if (check(TokenType.IDENT)) {
             // Parse as variable
-            child = parseVariable();
+            child = parseVariableRef();
         } else {
-            // Fallback to literal parsing
-            child = literal();
+            throw new LiquidParserException("First part of object should be a literal or variable ref");
         }
-        
-        return new LiquidObjectNode(child);
+
+        skipSpace();
+        if (check(TokenType.OBJECT_CLOSE)) {
+            advance();
+            return new LiquidObjectNode(child, new FilterNode[0]);
+        }
+        FilterNode[] filters = parseFilters();
+        expect(TokenType.OBJECT_CLOSE, "Expected '}}'");
+        return new LiquidObjectNode(child, filters);
     }
 
-    private AstNode parseVariable() {
+    private FilterNode[] parseFilters() {
+        List<FilterNode> nodes = new ArrayList<>();
+        while (!check(TokenType.EOF) && !check(TokenType.OBJECT_CLOSE)) {
+            expect(TokenType.PIPE, "Expected '|'");
+            nodes.add(parseFilter());
+            skipSpace();
+        }
+        return nodes.toArray(new FilterNode[0]);
+    }
+
+    private FilterNode parseFilter() {
+        String functionName = ident();
+        if (!filterFunctions.containsKey(functionName)) {
+            throw new LiquidParserException(functionName);
+        }
+        FilterFunction filterFunction = filterFunctions.get(functionName);
+        return new FilterNode(filterFunction, new AstNode[0]); // TODO
+    }
+
+    private AstNode parseVariableRef() {
         skipSpace();
         String name = ident();
-        List<VariableNode.FilterSpec> filters = new ArrayList<>();
-        while (true) {
-            skipSpace();
-            if (!match(TokenType.PIPE)) break;
-            skipSpace();
-            String filterName = ident();
-            List<AstNode> args = new ArrayList<>();
-            skipSpace();
-            if (match(TokenType.COLON)) {
-                do {
-                    skipSpace();
-                    args.add(literal());
-                    skipSpace();
-                } while (match(TokenType.COMMA));
-            }
-            filters.add(new VariableNode.FilterSpec(filterName, args));
-        }
-        return new VariableNode(name, filters);
+        return new VariableRefNode(name);
     }
 
     private AstNode parseTag() {
@@ -104,9 +115,9 @@ public class LiquidParserFacade {
                 if (check(TokenType.EOF)) break;
                 if (check(TokenType.TEXT) || check(TokenType.WHITESPACE)) {
                     body.add(new TextNode(advance().lexeme()));
-                } else if (match(TokenType.VAR_OPEN)) {
+                } else if (match(TokenType.OBJECT_OPEN)) {
                     body.add(parseObject());
-                    expect(TokenType.VAR_CLOSE, "Expected '}}'");
+                    expect(TokenType.OBJECT_CLOSE, "Expected '}}'");
                 } else if (match(TokenType.TAG_OPEN)) {
                     AstNode nested = parseTag();
                     expect(TokenType.TAG_CLOSE, "Expected '%}'");

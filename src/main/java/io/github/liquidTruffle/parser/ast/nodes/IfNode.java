@@ -1,7 +1,7 @@
 package io.github.liquidTruffle.parser.ast.nodes;
 
 import io.github.liquidTruffle.parser.ast.AstNode;
-import io.github.liquidTruffle.runtime.LiquidRuntime;
+import io.github.liquidTruffle.runtime.LiquidRuntimeUtils;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
@@ -17,8 +17,8 @@ public class IfNode extends AstNode {
     
     @Override
     public String executeGeneric(VirtualFrame frame) {
-        Object v = LiquidRuntime.getVariable(frame, variableName);
-        if (LiquidRuntime.isTruthy(v)) {
+        Object v = LiquidRuntimeUtils.getVariable(frame, variableName);
+        if (LiquidRuntimeUtils.isTruthy(v)) {
             StringBuilder result = new StringBuilder();
             for (AstNode node : body) {
                 Object value = node.executeGeneric(frame);

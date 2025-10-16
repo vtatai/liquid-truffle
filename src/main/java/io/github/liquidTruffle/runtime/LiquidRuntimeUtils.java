@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.Collections;
 
-public class LiquidRuntime {
+public class LiquidRuntimeUtils {
     
     public static boolean isTruthy(Object v) {
         if (v == null) {

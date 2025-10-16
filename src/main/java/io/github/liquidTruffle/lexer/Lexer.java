@@ -228,14 +228,14 @@ public class Lexer {
         int startPos = position;
         advance(2);
         currentMode = LexerMode.IN_OBJ;
-        return new Token(TokenType.VAR_OPEN, "{{", startPos, position);
+        return new Token(TokenType.OBJECT_OPEN, "{{", startPos, position);
     }
 
     private Token processObjClose() {
         int startPos = position;
         advance(2);
         currentMode = LexerMode.IN_TEXT;
-        return new Token(TokenType.VAR_CLOSE, "}}", startPos, position);
+        return new Token(TokenType.OBJECT_CLOSE, "}}", startPos, position);
     }
 
     private Token processTagOpen() {

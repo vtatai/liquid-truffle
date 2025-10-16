@@ -3,7 +3,7 @@ package io.github.liquidTruffle.parser;
 import io.github.liquidTruffle.parser.ast.nodes.LiquidObjectNode;
 import io.github.liquidTruffle.parser.ast.nodes.NumberLiteralNode;
 import io.github.liquidTruffle.parser.ast.nodes.StringLiteralNode;
-import io.github.liquidTruffle.parser.ast.nodes.VariableNode;
+import io.github.liquidTruffle.parser.ast.nodes.VariableRefNode;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.io.StringReader;
@@ -34,10 +34,10 @@ public class LiquidObjectNodeTest {
         Assertions.assertThat(nodes.get(0)).isInstanceOf(LiquidObjectNode.class);
 
         LiquidObjectNode objectNode = (LiquidObjectNode) nodes.get(0);
-        Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(VariableNode.class);
+        Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(VariableRefNode.class);
 
-        VariableNode variableNode = (VariableNode) objectNode.getChildNode();
-        Assertions.assertThat(variableNode.getVariableName()).isEqualTo("name");
+        VariableRefNode variableNode = (VariableRefNode) objectNode.getChildNode();
+        Assertions.assertThat(variableNode.getName()).isEqualTo("name");
     }
 
     @Test
@@ -65,7 +65,7 @@ public class LiquidObjectNodeTest {
         // First object node with variable
         Assertions.assertThat(nodes.get(1)).isInstanceOf(LiquidObjectNode.class);
         LiquidObjectNode objectNode1 = (LiquidObjectNode) nodes.get(1);
-        Assertions.assertThat(objectNode1.getChildNode()).isInstanceOf(VariableNode.class);
+        Assertions.assertThat(objectNode1.getChildNode()).isInstanceOf(VariableRefNode.class);
 
         // Text node
         Assertions.assertThat(nodes.get(2).getClass().getSimpleName()).isEqualTo("TextNode");
@@ -73,7 +73,7 @@ public class LiquidObjectNodeTest {
         // Second object node with variable
         Assertions.assertThat(nodes.get(3)).isInstanceOf(LiquidObjectNode.class);
         LiquidObjectNode objectNode2 = (LiquidObjectNode) nodes.get(3);
-        Assertions.assertThat(objectNode2.getChildNode()).isInstanceOf(VariableNode.class);
+        Assertions.assertThat(objectNode2.getChildNode()).isInstanceOf(VariableRefNode.class);
 
         // Final text node
         Assertions.assertThat(nodes.get(4).getClass().getSimpleName()).isEqualTo("TextNode");

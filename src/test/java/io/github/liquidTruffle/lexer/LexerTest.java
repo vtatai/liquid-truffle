@@ -20,11 +20,11 @@ public class LexerTest {
         // Assert for the correct order: VAR_OPEN, IDENT, PIPE, IDENT, VAR_CLOSE (no whitespace tokens)
         List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).containsExactly(
-            TokenType.VAR_OPEN,
+            TokenType.OBJECT_OPEN,
             TokenType.IDENT,      // name
             TokenType.PIPE,       // |
             TokenType.IDENT,      // upcase
-            TokenType.VAR_CLOSE,
+            TokenType.OBJECT_CLOSE,
             TokenType.EOF
         );
         
@@ -52,10 +52,10 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         Assertions.assertThat(tokens).hasSizeGreaterThanOrEqualTo(4);
-        Assertions.assertThat(tokens.get(0).type()).isEqualTo(TokenType.VAR_OPEN);
+        Assertions.assertThat(tokens.get(0).type()).isEqualTo(TokenType.OBJECT_OPEN);
         Assertions.assertThat(tokens.get(1).type()).isEqualTo(TokenType.IDENT);
         Assertions.assertThat(tokens.get(1).lexeme()).isEqualTo("variable");
-        Assertions.assertThat(tokens.get(2).type()).isEqualTo(TokenType.VAR_CLOSE);
+        Assertions.assertThat(tokens.get(2).type()).isEqualTo(TokenType.OBJECT_CLOSE);
         Assertions.assertThat(tokens.get(tokens.size() - 1).type()).isEqualTo(TokenType.EOF);
     }
 
@@ -90,9 +90,9 @@ public class LexerTest {
         // Should have the other expected tokens
         List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).containsExactly(
-            TokenType.VAR_OPEN,
+            TokenType.OBJECT_OPEN,
             TokenType.IDENT,
-            TokenType.VAR_CLOSE,
+            TokenType.OBJECT_CLOSE,
             TokenType.EOF
         );
     }
@@ -110,11 +110,11 @@ public class LexerTest {
         // Should have the expected tokens including whitespace
         List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         Assertions.assertThat(tokenTypes).containsExactly(
-            TokenType.VAR_OPEN,
+            TokenType.OBJECT_OPEN,
             TokenType.WHITESPACE,
             TokenType.IDENT,
             TokenType.WHITESPACE,
-            TokenType.VAR_CLOSE,
+            TokenType.OBJECT_CLOSE,
             TokenType.EOF
         );
         
@@ -173,8 +173,8 @@ public class LexerTest {
         
         // Should have all expected token types
         List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
-        Assertions.assertThat(tokenTypes).contains(TokenType.VAR_OPEN);
-        Assertions.assertThat(tokenTypes).contains(TokenType.VAR_CLOSE);
+        Assertions.assertThat(tokenTypes).contains(TokenType.OBJECT_OPEN);
+        Assertions.assertThat(tokenTypes).contains(TokenType.OBJECT_CLOSE);
         Assertions.assertThat(tokenTypes).contains(TokenType.TAG_OPEN);
         Assertions.assertThat(tokenTypes).contains(TokenType.TAG_CLOSE);
         Assertions.assertThat(tokenTypes).contains(TokenType.TEXT);

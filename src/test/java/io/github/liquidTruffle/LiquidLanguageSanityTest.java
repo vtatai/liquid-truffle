@@ -1,5 +1,6 @@
 package io.github.liquidTruffle;
 
+import io.github.liquidTruffle.parser.LiquidLanguage;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,18 @@ public class LiquidLanguageSanityTest {
             Value result = ctx.eval("liquid", "hello {{ \"world\" }}");
             assertTrue(result.isString());
             assertThat(result.asString()).isEqualTo("hello world");
+        }
+    }
+
+    @Test
+    public void simpleVarTest() {
+        try (Context ctx = Context.newBuilder("liquid")
+                .allowAllAccess(true)
+                .build()) {
+            ctx.getBindings(LiquidLanguage.ID).putMember("world", "bob");
+            Value result = ctx.eval("liquid", "hello {{ world }}");
+            assertTrue(result.isString());
+            assertThat(result.asString()).isEqualTo("hello bob");
         }
     }
 }
