@@ -27,11 +27,7 @@ public class Lexer {
         "greater_than_or_equal_to", "less_than_or_equal_to", "not_equals",
         // Other keywords
         "true", "false", "nil", "null", "empty", "blank", "default", "with",
-        "limit", "offset", "reversed", "sort", "where", "group_by", "order",
-        "first", "last", "size", "join", "split", "strip", "strip_html",
-        "strip_newlines", "newline_to_br", "escape", "url_encode", "url_decode",
-        "base64_encode", "base64_decode", "hmac_sha1", "hmac_sha256", "md5",
-        "sha1", "sha256", "date", "time", "now", "today", "yesterday", "tomorrow"
+        "first", "last", "size"
     ));
 
     public Lexer(Reader reader, boolean reportWhitespaceTokens) {
