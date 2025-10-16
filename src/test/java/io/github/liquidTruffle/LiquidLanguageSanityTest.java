@@ -10,13 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LiquidLanguageSanityTest {
     @Test
-    public void helloWorldTest() {
+    public void objectWithinTextTest() {
         try (Context ctx = Context.newBuilder("liquid")
                 .allowAllAccess(true)
                 .build()) {
-            Value result = ctx.eval("liquid", "hello {{ \"world\" }}");
+            Value result = ctx.eval("liquid", "hello {{ \"big\" }} world");
             assertTrue(result.isString());
-            assertThat(result.asString()).isEqualTo("hello world");
+            assertThat(result.asString()).isEqualTo("hello big world");
         }
     }
 
