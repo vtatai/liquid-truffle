@@ -1,5 +1,6 @@
 package io.github.liquidTruffle.parser;
 
+import io.github.liquidTruffle.LiquidRuntimeException;
 import io.github.liquidTruffle.lexer.Lexer;
 import io.github.liquidTruffle.lexer.Token;
 import io.github.liquidTruffle.lexer.TokenType;
@@ -16,7 +17,14 @@ public class LiquidParserFacade {
     private List<Token> tokens;
     private int p = 0;
     private Map<String, FilterFunction> filterFunctions = Map.of(
-            "append", new FilterFunction("append", params -> params[0].toString() + params[1].toString()));
+            "append", new FilterFunction("append", params -> params[0].toString() + params[1].toString()),
+            "limit", new FilterFunction("limit", params -> {
+                throw new LiquidRuntimeException("Not implemented");
+            }),
+            "replace", new FilterFunction("replace", params -> {
+                return params[0].toString().replace(params[1].toString(), params[2].toString());
+            })
+    );
 
     public LiquidRootNode parse(LiquidLanguage language, Reader reader) {
         return new LiquidRootNode(language, parseNodes(reader).toArray(new AstNode[0]));
@@ -90,7 +98,34 @@ public class LiquidParserFacade {
             throw new LiquidParserException(functionName);
         }
         FilterFunction filterFunction = filterFunctions.get(functionName);
-        return new FilterNode(filterFunction, new AstNode[0]); // TODO
+        
+        // Parse filter parameters if present
+        List<AstNode> params = new ArrayList<>();
+        if (match(TokenType.COLON)) {
+            skipSpace();
+            // Parse comma-separated parameters
+            do {
+                skipSpace();
+                if (check(TokenType.STRING) || check(TokenType.NUMBER) || check(TokenType.KEYWORD) || check(TokenType.IDENT)) {
+                    params.add(literal());
+                } else {
+                    throw new LiquidParserException("Expected parameter after colon in filter " + functionName);
+                }
+                skipSpace();
+            } while (match(TokenType.COMMA));
+        }
+        
+        return new FilterNode(filterFunction, params.toArray(new AstNode[0]));
+    }
+
+    private AstNode parseLiteralOrVariableRef() {
+        if (check(TokenType.IDENT)) {
+            return parseVariableRef();
+        }
+        if (check(TokenType.STRING) || check(TokenType.NUMBER)) {
+            return literal();
+        }
+        throw new LiquidParserException("Expected literal or variable ref but got " + peek());
     }
 
     private AstNode parseVariableRef() {
@@ -152,19 +187,8 @@ public class LiquidParserFacade {
             return new StringLiteralNode(prev().lexeme());
         } else if (match(TokenType.NUMBER)) {
             return new NumberLiteralNode(Integer.parseInt(prev().lexeme()));
-        } else if (match(TokenType.KEYWORD)) {
-            String keyword = prev().lexeme();
-            return switch (keyword) {
-                case "true" -> new BooleanLiteralNode(true);
-                case "false" -> new BooleanLiteralNode(false);
-                case "nil", "null" -> new NilLiteralNode();
-                default -> new StringLiteralNode(keyword); // Treat other keywords as strings
-            };
-        } else if (match(TokenType.IDENT)) {
-            return new StringLiteralNode(prev().lexeme());
-        } else {
-            return new StringLiteralNode("");
         }
+        throw new LiquidParserException("Expecting a literal node but got " + peek());
     }
 
     private boolean check(TokenType t) {
