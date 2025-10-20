@@ -14,10 +14,16 @@ Functionality supported now:
 - Filter pipelines like `{{ name | upcase }}` or `{{ a | append: b }}`
 
 To be done:
+- Ifs: `{% if variable %}...{% endif %}` with truthy evaluation per Liquid basics
+- Case
+- Loops
+- Comments
+- Variables: assign, capture, increment, decrement
+- Ensuring multi-line works correctly
+- Reporting parsing / runtime issues with correct line / column numbers
 - Annotating AST nodes and related classes with Truffle annotations
-- `{% if variable %}...{% endif %}` with truthy evaluation per Liquid basics
+- Generating Liquid pre-compiled binaries
 - Support for all original Liquid filter functions
-- Loops, advanced tags, complex expressions, whitespace control nuances
 - Test suite checking full compatibility with Shopify Liquid
 
 ## Build & Run
