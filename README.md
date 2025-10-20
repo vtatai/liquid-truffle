@@ -11,11 +11,12 @@ other alternatives such as Jekyll.
 Functionality supported now:
 - Text segments
 - `{{ variable }}` 
+- Filter pipelines like `{{ name | upcase }}` or `{{ a | append: b }}`
 
 To be done:
-- Filter pipelines like `{{ name | upcase }}` or `{{ a | append: b }}`
 - Annotating AST nodes and related classes with Truffle annotations
 - `{% if variable %}...{% endif %}` with truthy evaluation per Liquid basics
+- Support for all original Liquid filter functions
 - Loops, advanced tags, complex expressions, whitespace control nuances
 - Test suite checking full compatibility with Shopify Liquid
 
