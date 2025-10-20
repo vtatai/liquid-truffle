@@ -2,12 +2,11 @@ package io.github.liquidTruffle.parser;
 
 import io.github.liquidTruffle.parser.ast.AstNode;
 import io.github.liquidTruffle.parser.ast.nodes.*;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.io.StringReader;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.filter;
 
 public class LiquidParserFacadeTest {
     @Test
@@ -24,7 +23,7 @@ public class LiquidParserFacadeTest {
 
         // Second child should be LiquidObjectNode with VariableNode child
         LiquidObjectNode objectNode = assertAndCast(nodes.get(1), LiquidObjectNode.class);
-        VariableRefNode variableNode = assertAndCast(objectNode.getChildNode(), VariableRefNode.class);
+        VariableRefNode variableNode = assertAndCast(objectNode.getChild(), VariableRefNode.class);
         assertThat(variableNode.getName()).isEqualTo("name");
         assertThat(nodes.get(1)).isInstanceOf(LiquidObjectNode.class);
 
@@ -41,11 +40,13 @@ public class LiquidParserFacadeTest {
         assertTextNode(nodes.get(0), "Hello ");
 
         LiquidObjectNode objectNode = assertAndCast(nodes.get(1), LiquidObjectNode.class);
-        VariableRefNode variableNode = assertAndCast(objectNode.getChildNode(), VariableRefNode.class);
-        assertThat(variableNode.getName()).isEqualTo("name");
-        assertThat(objectNode.getFilters().length).isEqualTo(1);
-        FilterNode filterNode = assertAndCast(objectNode.getFilters()[0], FilterNode.class);
+        // With binary tree structure, the child should be a FilterNode
+        FilterNode filterNode = assertAndCast(objectNode.getChild(), FilterNode.class);
         assertThat(filterNode.getFilterFunction().name()).isEqualTo("append");
+        
+        // The left child should be the variable
+        VariableRefNode variableNode = assertAndCast(filterNode.getInputValue(), VariableRefNode.class);
+        assertThat(variableNode.getName()).isEqualTo("name");
 
         assertTextNode(nodes.get(2), ", welcome to our site!");
     }
@@ -53,20 +54,23 @@ public class LiquidParserFacadeTest {
     @Test
     public void canParseFilterWithParameters() {
         LiquidParserFacade parser = new LiquidParserFacade();
-        var nodes = parser.parseNodes(new StringReader("{{ \"ruby\" | append: \"red\" }}"));
+        var nodes = parser.parseNodes(new StringReader("{{ \"ruby\" | append: \"red\" | capitalize }}"));
         
         assertThat(nodes).hasSize(1);
         
         LiquidObjectNode objectNode = assertAndCast(nodes.get(0), LiquidObjectNode.class);
-        StringLiteralNode stringNode = assertAndCast(objectNode.getChildNode(), StringLiteralNode.class);
+
+        FilterNode filterNode = assertAndCast(objectNode.getChild(), FilterNode.class);
+        assertThat(filterNode.getFilterFunction().name()).isEqualTo("capitalize");
+
+        filterNode = assertAndCast(filterNode.getInputValue(), FilterNode.class);
+        assertThat(filterNode.getFilterFunction().name()).isEqualTo("append");
+        
+        StringLiteralNode stringNode = assertAndCast(filterNode.getInputValue(), StringLiteralNode.class);
         assertThat(stringNode.getStringValue()).isEqualTo("ruby");
         
-        assertThat(objectNode.getFilters().length).isEqualTo(1);
-        FilterNode filterNode = assertAndCast(objectNode.getFilters()[0], FilterNode.class);
-        assertThat(filterNode.getFilterFunction().name()).isEqualTo("append");
-        assertThat(filterNode.getParams().length).isEqualTo(1);
-        
-        StringLiteralNode paramNode = assertAndCast(filterNode.getParams()[0], StringLiteralNode.class);
+        assertThat(filterNode.getParameters().length).isEqualTo(1);
+        StringLiteralNode paramNode = assertAndCast(filterNode.getParameters()[0], StringLiteralNode.class);
         assertThat(paramNode.getStringValue()).isEqualTo("red");
     }
 
@@ -78,18 +82,20 @@ public class LiquidParserFacadeTest {
         assertThat(nodes).hasSize(1);
         
         LiquidObjectNode objectNode = assertAndCast(nodes.get(0), LiquidObjectNode.class);
-        StringLiteralNode stringNode = assertAndCast(objectNode.getChildNode(), StringLiteralNode.class);
+        // With binary tree structure, the child should be a FilterNode
+        FilterNode filterNode = assertAndCast(objectNode.getChild(), FilterNode.class);
+        assertThat(filterNode.getFilterFunction().name()).isEqualTo("replace");
+        
+        // The left child should be the string literal
+        StringLiteralNode stringNode = assertAndCast(filterNode.getInputValue(), StringLiteralNode.class);
         assertThat(stringNode.getStringValue()).isEqualTo("hello");
         
-        assertThat(objectNode.getFilters().length).isEqualTo(1);
-        FilterNode filterNode = assertAndCast(objectNode.getFilters()[0], FilterNode.class);
-        assertThat(filterNode.getFilterFunction().name()).isEqualTo("replace");
-        assertThat(filterNode.getParams().length).isEqualTo(2);
-        
-        StringLiteralNode param1 = assertAndCast(filterNode.getParams()[0], StringLiteralNode.class);
+        // The right children should contain the parameters
+        assertThat(filterNode.getParameters().length).isEqualTo(2);
+        StringLiteralNode param1 = assertAndCast(filterNode.getParameters()[0], StringLiteralNode.class);
         assertThat(param1.getStringValue()).isEqualTo("hello");
         
-        StringLiteralNode param2 = assertAndCast(filterNode.getParams()[1], StringLiteralNode.class);
+        StringLiteralNode param2 = assertAndCast(filterNode.getParameters()[1], StringLiteralNode.class);
         assertThat(param2.getStringValue()).isEqualTo("!");
     }
 
@@ -101,15 +107,17 @@ public class LiquidParserFacadeTest {
         assertThat(nodes).hasSize(1);
         
         LiquidObjectNode objectNode = assertAndCast(nodes.get(0), LiquidObjectNode.class);
-        VariableRefNode variableNode = assertAndCast(objectNode.getChildNode(), VariableRefNode.class);
+        // With binary tree structure, the child should be a FilterNode
+        FilterNode filterNode = assertAndCast(objectNode.getChild(), FilterNode.class);
+        assertThat(filterNode.getFilterFunction().name()).isEqualTo("limit");
+        
+        // The left child should be the variable
+        VariableRefNode variableNode = assertAndCast(filterNode.getInputValue(), VariableRefNode.class);
         assertThat(variableNode.getName()).isEqualTo("items");
         
-        assertThat(objectNode.getFilters().length).isEqualTo(1);
-        FilterNode filterNode = assertAndCast(objectNode.getFilters()[0], FilterNode.class);
-        assertThat(filterNode.getFilterFunction().name()).isEqualTo("limit");
-        assertThat(filterNode.getParams().length).isEqualTo(1);
-        
-        NumberLiteralNode paramNode = assertAndCast(filterNode.getParams()[0], NumberLiteralNode.class);
+        // The right children should contain the parameters
+        assertThat(filterNode.getParameters().length).isEqualTo(1);
+        NumberLiteralNode paramNode = assertAndCast(filterNode.getParameters()[0], NumberLiteralNode.class);
         assertThat(paramNode.getNumberValue()).isEqualTo(5);
     }
 

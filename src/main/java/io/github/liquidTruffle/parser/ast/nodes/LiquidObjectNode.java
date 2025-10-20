@@ -1,32 +1,25 @@
 package io.github.liquidTruffle.parser.ast.nodes;
 
-import io.github.liquidTruffle.parser.ast.AstNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import io.github.liquidTruffle.parser.ast.AstNode;
 
-@NodeInfo(description = "Represents Liquid objects that hold a child object, which can be either a literal or a variable")
+@NodeInfo(description = "Represents Liquid objects that hold a single child representing the entire filter chain")
 public class LiquidObjectNode extends AstNode {
     @Child
-    private AstNode initialNode;
-    @Children
-    private FilterNode[] filters;
+    private AstNode child;  // Either a literal/variable or the root of a filter chain
 
-    public LiquidObjectNode(AstNode initialNode, FilterNode[] filters) {
-        this.initialNode = initialNode;
-        this.filters = filters;
+    public LiquidObjectNode(AstNode child) {
+        this.child = child;
     }
 
     @Override
     public Object executeGeneric(VirtualFrame frame) {
-        return initialNode.executeGeneric(frame);
-    }
-
-    public FilterNode[] getFilters() {
-        return filters;
+        return child.executeGeneric(frame);
     }
 
     // Expose child for testing purposes
-    public AstNode getChildNode() {
-        return this.initialNode;
+    public AstNode getChild() {
+        return this.child;
     }
 }

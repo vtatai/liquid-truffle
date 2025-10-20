@@ -19,9 +19,9 @@ public class LiquidObjectNodeTest {
         Assertions.assertThat(nodes.get(0)).isInstanceOf(LiquidObjectNode.class);
 
         LiquidObjectNode objectNode = (LiquidObjectNode) nodes.get(0);
-        Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(StringLiteralNode.class);
+        Assertions.assertThat(objectNode.getChild()).isInstanceOf(StringLiteralNode.class);
 
-        StringLiteralNode stringLiteral = (StringLiteralNode) objectNode.getChildNode();
+        StringLiteralNode stringLiteral = (StringLiteralNode) objectNode.getChild();
         Assertions.assertThat(stringLiteral.getStringValue()).isEqualTo("hello");
     }
 
@@ -34,9 +34,9 @@ public class LiquidObjectNodeTest {
         Assertions.assertThat(nodes.get(0)).isInstanceOf(LiquidObjectNode.class);
 
         LiquidObjectNode objectNode = (LiquidObjectNode) nodes.get(0);
-        Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(VariableRefNode.class);
+        Assertions.assertThat(objectNode.getChild()).isInstanceOf(VariableRefNode.class);
 
-        VariableRefNode variableNode = (VariableRefNode) objectNode.getChildNode();
+        VariableRefNode variableNode = (VariableRefNode) objectNode.getChild();
         Assertions.assertThat(variableNode.getName()).isEqualTo("name");
     }
 
@@ -49,7 +49,7 @@ public class LiquidObjectNodeTest {
         Assertions.assertThat(nodes.get(0)).isInstanceOf(LiquidObjectNode.class);
 
         LiquidObjectNode objectNode = (LiquidObjectNode) nodes.get(0);
-        Assertions.assertThat(objectNode.getChildNode()).isInstanceOf(NumberLiteralNode.class);
+        Assertions.assertThat(objectNode.getChild()).isInstanceOf(NumberLiteralNode.class);
     }
 
     @Test
@@ -65,7 +65,7 @@ public class LiquidObjectNodeTest {
         // First object node with variable
         Assertions.assertThat(nodes.get(1)).isInstanceOf(LiquidObjectNode.class);
         LiquidObjectNode objectNode1 = (LiquidObjectNode) nodes.get(1);
-        Assertions.assertThat(objectNode1.getChildNode()).isInstanceOf(VariableRefNode.class);
+        Assertions.assertThat(objectNode1.getChild()).isInstanceOf(VariableRefNode.class);
 
         // Text node
         Assertions.assertThat(nodes.get(2).getClass().getSimpleName()).isEqualTo("TextNode");
@@ -73,7 +73,7 @@ public class LiquidObjectNodeTest {
         // Second object node with variable
         Assertions.assertThat(nodes.get(3)).isInstanceOf(LiquidObjectNode.class);
         LiquidObjectNode objectNode2 = (LiquidObjectNode) nodes.get(3);
-        Assertions.assertThat(objectNode2.getChildNode()).isInstanceOf(VariableRefNode.class);
+        Assertions.assertThat(objectNode2.getChild()).isInstanceOf(VariableRefNode.class);
 
         // Final text node
         Assertions.assertThat(nodes.get(4).getClass().getSimpleName()).isEqualTo("TextNode");

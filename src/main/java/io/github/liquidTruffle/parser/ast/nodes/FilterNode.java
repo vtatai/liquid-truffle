@@ -4,29 +4,45 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import io.github.liquidTruffle.parser.ast.AstNode;
 
-import java.util.Arrays;
-
-@NodeInfo(description = "Represents a a single filter call in Liquid templates")
+@NodeInfo(description = "Represents a single filter call in Liquid templates as a binary operator")
 public class FilterNode extends AstNode {
     private final FilterFunction filterFunction;
+    @Child
+    private AstNode inputValue;  // The input value (previous filter or literal/variable)
     @Children
-    private AstNode[] params;
+    private AstNode[] parameters;  // The filter parameters
 
-    public FilterNode(FilterFunction function, AstNode[] params) {
+    public FilterNode(FilterFunction function, AstNode inputValue, AstNode[] parameters) {
         this.filterFunction = function;
-        this.params = params;
+        this.inputValue = inputValue;
+        this.parameters = parameters;
     }
 
     @Override
     public Object executeGeneric(VirtualFrame frame) {
-        return filterFunction.function().apply(Arrays.stream(params).map(astNode -> astNode.executeGeneric(frame)).toArray());
+        // Execute the left child (input value)
+        Object inputValue = this.inputValue.executeGeneric(frame);
+        
+        // Execute the right children (filter parameters)
+        Object[] allParams = new Object[parameters.length + 1];
+        allParams[0] = inputValue;
+        
+        for (int i = 0; i < parameters.length; i++) {
+            allParams[i + 1] = parameters[i].executeGeneric(frame);
+        }
+        
+        return filterFunction.function().apply(allParams);
     }
 
     public FilterFunction getFilterFunction() {
         return filterFunction;
     }
 
-    public AstNode[] getParams() {
-        return params;
+    public AstNode getInputValue() {
+        return inputValue;
+    }
+
+    public AstNode[] getParameters() {
+        return parameters;
     }
 }

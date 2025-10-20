@@ -31,4 +31,26 @@ public class LiquidLanguageSanityTest {
             assertThat(result.asString()).isEqualTo("hello bob");
         }
     }
+
+    @Test
+    public void appendFilterTest() {
+        try (Context ctx = Context.newBuilder("liquid")
+                .allowAllAccess(true)
+                .build()) {
+            Value result = ctx.eval("liquid", "{{ \"hello\" | append: \" world\" }}");
+            assertTrue(result.isString());
+            assertThat(result.asString()).isEqualTo("hello world");
+        }
+    }
+
+    @Test
+    public void multipleFiltersTest() {
+        try (Context ctx = Context.newBuilder("liquid")
+                .allowAllAccess(true)
+                .build()) {
+            Value result = ctx.eval("liquid", "{{ \"hello\" | append: \" world\" | replace: \"hello\", \"hi\" }}");
+            assertTrue(result.isString());
+            assertThat(result.asString()).isEqualTo("hi world");
+        }
+    }
 }

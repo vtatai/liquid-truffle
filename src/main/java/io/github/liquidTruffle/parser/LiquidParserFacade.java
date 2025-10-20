@@ -18,6 +18,7 @@ public class LiquidParserFacade {
     private int p = 0;
     private Map<String, FilterFunction> filterFunctions = Map.of(
             "append", new FilterFunction("append", params -> params[0].toString() + params[1].toString()),
+            "capitalize", new FilterFunction("capitalize", params -> params[0].toString().toUpperCase()),
             "limit", new FilterFunction("limit", params -> {
                 throw new LiquidRuntimeException("Not implemented");
             }),
@@ -75,21 +76,26 @@ public class LiquidParserFacade {
         skipSpace();
         if (check(TokenType.OBJECT_CLOSE)) {
             advance();
-            return new LiquidObjectNode(child, new FilterNode[0]);
+            return new LiquidObjectNode(child);
         }
-        FilterNode[] filters = parseFilters();
+        
+        // Parse filters and build binary tree
+        AstNode filterChain = parseFilterChain(child);
         expect(TokenType.OBJECT_CLOSE, "Expected '}}'");
-        return new LiquidObjectNode(child, filters);
+        return new LiquidObjectNode(filterChain);
     }
 
-    private FilterNode[] parseFilters() {
-        List<FilterNode> nodes = new ArrayList<>();
+    private AstNode parseFilterChain(AstNode initialValue) {
+        AstNode current = initialValue;
+        
         while (!check(TokenType.EOF) && !check(TokenType.OBJECT_CLOSE)) {
             expect(TokenType.PIPE, "Expected '|'");
-            nodes.add(parseFilter());
+            FilterNode filter = parseFilter();
+            current = new FilterNode(filter.getFilterFunction(), current, filter.getParameters());
             skipSpace();
         }
-        return nodes.toArray(new FilterNode[0]);
+        
+        return current;
     }
 
     private FilterNode parseFilter() {
@@ -115,7 +121,8 @@ public class LiquidParserFacade {
             } while (match(TokenType.COMMA));
         }
         
-        return new FilterNode(filterFunction, params.toArray(new AstNode[0]));
+        // Create a temporary FilterNode with null left child - this will be replaced in parseFilterChain
+        return new FilterNode(filterFunction, null, params.toArray(new AstNode[0]));
     }
 
     private AstNode parseLiteralOrVariableRef() {
