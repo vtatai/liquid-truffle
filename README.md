@@ -1,9 +1,12 @@
 # Liquid on Truffle
 
-A parser and interpreter for the [Liquid](https://shopify.github.io/liquid/) language implemented as a GraalVM Truffle language. 
+**ATTENTION**: this is still in development and far from being feature-complete. Pull requests are very welcome 
+though!
+
+A parser and interpreter for the [Liquid](https://shopify.github.io/liquid/) language implemented as a GraalVM Truffle language.
 
 Its main goal is to be a fast, JVM-based Liquid implementation, based on a hand-rolled lexer and recursive descent 
-parser which generates an AST based on the Truffle Framework (from GraalVM).
+parser, which then generates an AST based on the Truffle Framework (from GraalVM).
 
 In order to be as simple as possible, we only aim to be compatible with Shopify Liquid, not
 other alternatives such as Jekyll.
@@ -24,6 +27,7 @@ To be done:
 - Annotating AST nodes and related classes with Truffle annotations
 - Generating Liquid pre-compiled binaries
 - Support for all original Liquid filter functions
+- Support for custom filter functions
 - Test suite checking full compatibility with Shopify Liquid
 
 ## Build & Run
