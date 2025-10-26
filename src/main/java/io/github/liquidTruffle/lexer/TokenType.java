@@ -20,5 +20,38 @@ public enum TokenType {
     LTE,           // <=
     EQ,            // ==
     NE,            // !=
+    
+    // Arithmetic operators
+    PLUS,          // +
+    MINUS,         // -
+    MULTIPLY,      // *
+    DIVIDE,        // /
+    MODULO,        // %
+    EXPONENT,      // **
+    
+    // Parentheses and brackets
+    LPAREN,        // (
+    RPAREN,        // )
+    LBRACKET,      // [
+    RBRACKET,      // ]
+    LBRACE,        // {
+    RBRACE,        // }
+    
+    // Whitespace control
+    WHITESPACE_CONTROL, // - or ~
+    
+    // Comments
+    COMMENT_OPEN,  // {#
+    COMMENT_CLOSE, // #}
+    
+    // Ternary operator
+    QUESTION,      // ?
+    
+    // Range operator
+    RANGE,         // ..
+    
+    // Floating point numbers
+    FLOAT,
+    
     EOF
 }

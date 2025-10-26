@@ -58,7 +58,7 @@ public class LexerTest {
         assertThat(tokens.get(1).type()).isEqualTo(TokenType.IDENT);
         assertThat(tokens.get(1).lexeme()).isEqualTo("variable");
         assertThat(tokens.get(2).type()).isEqualTo(TokenType.OBJECT_CLOSE);
-        assertThat(tokens.get(tokens.size() - 1).type()).isEqualTo(TokenType.EOF);
+        assertThat(tokens.getLast().type()).isEqualTo(TokenType.EOF);
     }
 
     @Test
@@ -104,7 +104,7 @@ public class LexerTest {
         // Should have IDENT tokens for "Hello" and "World"
         List<Token> textTokens = tokens.stream().filter(t -> t.type() == TokenType.TEXT).collect(Collectors.toList());
         assertThat(textTokens).hasSize(1);
-        assertThat(textTokens.get(0).lexeme()).isEqualTo("Hello World");
+        assertThat(textTokens.getFirst().lexeme()).isEqualTo("Hello World");
     }
 
     @Test
@@ -136,7 +136,7 @@ public class LexerTest {
         
         // Should handle multi-line input correctly
         assertThat(tokens).isNotEmpty();
-        assertThat(tokens.get(tokens.size() - 1).type()).isEqualTo(TokenType.EOF);
+        assertThat(tokens.getLast().type()).isEqualTo(TokenType.EOF);
         
         // Should have all expected token types
         List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
@@ -182,7 +182,7 @@ public class LexerTest {
 
     @Test
     public void lexerThrowsErrorInObject() {
-        String src = "{{ % }}";
+        String src = "{{ @ }}";
         Lexer lexer = new Lexer(src);
         Assertions.assertThatThrownBy(lexer::lex).isInstanceOf(LexerException.class);
     }
@@ -266,8 +266,200 @@ public class LexerTest {
 
     @Test
     public void lexerThrowsErrorInTag() {
-        String src = "{% %%}";
+        String src = "{% @ %}";
         Lexer lexer = new Lexer(src);
         Assertions.assertThatThrownBy(lexer::lex).isInstanceOf(LexerException.class);
+    }
+
+    // Tests for new Liquid constructs
+
+    @Test
+    public void lexerHandlesArithmeticOperators() {
+        String src = "{{ 5 + 3 * 2 - 1 / 4 % 2 }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.PLUS);
+        assertThat(tokenTypes).contains(TokenType.MULTIPLY);
+        assertThat(tokenTypes).contains(TokenType.MINUS);
+        assertThat(tokenTypes).contains(TokenType.DIVIDE);
+        assertThat(tokenTypes).contains(TokenType.MODULO);
+    }
+
+    @Test
+    public void lexerHandlesExponentiation() {
+        String src = "{{ 2 ** 3 }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.EXPONENT);
+    }
+
+    @Test
+    public void lexerHandlesParentheses() {
+        String src = "{{ (5 + 3) * 2 }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.LPAREN);
+        assertThat(tokenTypes).contains(TokenType.RPAREN);
+    }
+
+    @Test
+    public void lexerHandlesArraySyntax() {
+        String src = "{{ [1, 2, 3] }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.LBRACKET);
+        assertThat(tokenTypes).contains(TokenType.RBRACKET);
+        assertThat(tokenTypes).contains(TokenType.COMMA);
+    }
+
+    @Test
+    public void lexerHandlesHashSyntax() {
+        String src = "{{ {name: 'John', age: 30} }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.LBRACE);
+        assertThat(tokenTypes).contains(TokenType.RBRACE);
+        assertThat(tokenTypes).contains(TokenType.COLON);
+    }
+
+    @Test
+    public void lexerHandlesRangeSyntax() {
+        String src = "{{ (1..5) }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.RANGE);
+    }
+
+    @Test
+    public void lexerHandlesTernaryOperator() {
+        String src = "{{ condition ? 'yes' : 'no' }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.QUESTION);
+        assertThat(tokenTypes).contains(TokenType.COLON);
+    }
+
+    @Test
+    public void lexerHandlesNegativeNumbers() {
+        String src = "{{ -42 }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<Token> numberTokens = tokens.stream()
+            .filter(t -> t.type() == TokenType.NUMBER)
+            .collect(Collectors.toList());
+        assertThat(numberTokens).hasSize(1);
+        assertThat(numberTokens.getFirst().lexeme()).isEqualTo("-42");
+    }
+
+    @Test
+    public void lexerHandlesFloatingPointNumbers() {
+        String src = "{{ 3.14 }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<Token> floatTokens = tokens.stream()
+            .filter(t -> t.type() == TokenType.FLOAT)
+            .collect(Collectors.toList());
+        assertThat(floatTokens).hasSize(1);
+        assertThat(floatTokens.getFirst().lexeme()).isEqualTo("3.14");
+    }
+
+    @Test
+    public void lexerHandlesNegativeFloatingPointNumbers() {
+        String src = "{{ -3.14 }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<Token> floatTokens = tokens.stream()
+            .filter(t -> t.type() == TokenType.FLOAT)
+            .collect(Collectors.toList());
+        assertThat(floatTokens).hasSize(1);
+        assertThat(floatTokens.getFirst().lexeme()).isEqualTo("-3.14");
+    }
+
+    @Test
+    public void lexerHandlesWhitespaceControl() {
+        String src = "{{- variable -}}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.MINUS);
+    }
+
+    @Test
+    public void lexerHandlesComments() {
+        String src = "Hello {# This is a comment #} World";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        // Comments should be ignored (not produce tokens)
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).doesNotContain(TokenType.COMMENT_OPEN);
+        assertThat(tokenTypes).doesNotContain(TokenType.COMMENT_CLOSE);
+        
+        // Should have text tokens for "Hello" and "World"
+        List<Token> textTokens = tokens.stream()
+            .filter(t -> t.type() == TokenType.TEXT)
+            .collect(Collectors.toList());
+        assertThat(textTokens).hasSize(2);
+        assertThat(textTokens.get(0).lexeme()).isEqualTo("Hello ");
+        assertThat(textTokens.get(1).lexeme()).isEqualTo(" World");
+    }
+
+    @Test
+    public void lexerHandlesComplexExpression() {
+        String src = "{{ (items | where: 'category', 'electronics' | limit: 5) | sort: 'price' }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.LPAREN);
+        assertThat(tokenTypes).contains(TokenType.RPAREN);
+        assertThat(tokenTypes).contains(TokenType.PIPE);
+        assertThat(tokenTypes).contains(TokenType.COLON);
+        assertThat(tokenTypes).contains(TokenType.COMMA);
+        assertThat(tokenTypes).contains(TokenType.STRING);
+    }
+
+    @Test
+    public void lexerHandlesArrayAccess() {
+        String src = "{{ items[0] }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.LBRACKET);
+        assertThat(tokenTypes).contains(TokenType.RBRACKET);
+        assertThat(tokenTypes).contains(TokenType.NUMBER);
+    }
+
+    @Test
+    public void lexerHandlesNestedExpressions() {
+        String src = "{{ items[user.preferences[0]] | where: 'active', true }}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.LBRACKET);
+        assertThat(tokenTypes).contains(TokenType.RBRACKET);
+        assertThat(tokenTypes).contains(TokenType.DOT);
+        assertThat(tokenTypes).contains(TokenType.PIPE);
+        assertThat(tokenTypes).contains(TokenType.COLON);
     }
 }

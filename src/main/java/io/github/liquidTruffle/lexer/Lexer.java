@@ -153,6 +153,12 @@ public class Lexer implements TokenStream {
             return processObjOpen();
         } else if (peek2("{%")) {
             return processTagOpen();
+        } else if (peek2("{#")) {
+            // Process comment: {# comment #}
+            processCommentOpen();
+            processComment();
+            processCommentClose();
+            return processText(); // Return empty text token for comments
         } else {
             return processText();
         }
@@ -166,8 +172,10 @@ public class Lexer implements TokenStream {
             return processTagClose();
         } else if (peekChar() == '"' || peekChar() == '\'') {
             return processString();
-        } else if (Character.isDigit(peekChar())) {
+        } else if (Character.isDigit(peekChar()) || (peekChar() == '-' && Character.isDigit(peekChar(1)))) {
             return processNumber();
+        } else if (peek2("..")) {
+            return processRange();
         } else if (peekChar() == '.') {
             return processDot();
         } else if (peekChar() == '|') {
@@ -176,6 +184,8 @@ public class Lexer implements TokenStream {
             return processComma();
         } else if (peekChar() == ':') {
             return processColon();
+        } else if (peekChar() == '?') {
+            return processQuestion();
         } else if (peek2(">=")) {
             return processGTE();
         } else if (peek2("<=")) {
@@ -184,10 +194,36 @@ public class Lexer implements TokenStream {
             return processEQ();
         } else if (peek2("!=")) {
             return processNE();
+        } else if (peek2("**")) {
+            return processExponent();
+        } else if (peek2("..")) {
+            return processRange();
         } else if (peekChar() == '>') {
             return processGT();
         } else if (peekChar() == '<') {
             return processLT();
+        } else if (peekChar() == '+') {
+            return processPlus();
+        } else if (peekChar() == '-') {
+            return processMinus();
+        } else if (peekChar() == '*') {
+            return processMultiply();
+        } else if (peekChar() == '/') {
+            return processDivide();
+        } else if (peekChar() == '%') {
+            return processModulo();
+        } else if (peekChar() == '(') {
+            return processLParen();
+        } else if (peekChar() == ')') {
+            return processRParen();
+        } else if (peekChar() == '[') {
+            return processLBracket();
+        } else if (peekChar() == ']') {
+            return processRBracket();
+        } else if (peekChar() == '{') {
+            return processLBrace();
+        } else if (peekChar() == '}') {
+            return processRBrace();
         } else if (isIdentStart(peekChar())) {
             return processIdentifier();
         } else {
@@ -203,8 +239,10 @@ public class Lexer implements TokenStream {
             return processObjClose();
         } else if (peekChar() == '"' || peekChar() == '\'') {
             return processString();
-        } else if (Character.isDigit(peekChar())) {
+        } else if (Character.isDigit(peekChar()) || (peekChar() == '-' && Character.isDigit(peekChar(1)))) {
             return processNumber();
+        } else if (peek2("..")) {
+            return processRange();
         } else if (peekChar() == '.') {
             return processDot();
         } else if (peekChar() == '|') {
@@ -213,6 +251,8 @@ public class Lexer implements TokenStream {
             return processComma();
         } else if (peekChar() == ':') {
             return processColon();
+        } else if (peekChar() == '?') {
+            return processQuestion();
         } else if (peek2(">=")) {
             return processGTE();
         } else if (peek2("<=")) {
@@ -221,10 +261,36 @@ public class Lexer implements TokenStream {
             return processEQ();
         } else if (peek2("!=")) {
             return processNE();
+        } else if (peek2("**")) {
+            return processExponent();
+        } else if (peek2("..")) {
+            return processRange();
         } else if (peekChar() == '>') {
             return processGT();
         } else if (peekChar() == '<') {
             return processLT();
+        } else if (peekChar() == '+') {
+            return processPlus();
+        } else if (peekChar() == '-') {
+            return processMinus();
+        } else if (peekChar() == '*') {
+            return processMultiply();
+        } else if (peekChar() == '/') {
+            return processDivide();
+        } else if (peekChar() == '%') {
+            return processModulo();
+        } else if (peekChar() == '(') {
+            return processLParen();
+        } else if (peekChar() == ')') {
+            return processRParen();
+        } else if (peekChar() == '[') {
+            return processLBracket();
+        } else if (peekChar() == ']') {
+            return processRBracket();
+        } else if (peekChar() == '{') {
+            return processLBrace();
+        } else if (peekChar() == '}') {
+            return processRBrace();
         } else if (isIdentStart(peekChar())) {
             return processIdentifier();
         } else {
@@ -285,7 +351,24 @@ public class Lexer implements TokenStream {
             if (c == '\u0000') break; // EOF
             
             // Stop at special sequences
-            if (peek2("{{") || peek2("{%")) {
+            if (peek2("{{") || peek2("{%") || peek2("{#")) {
+                break;
+            }
+            
+            result.append(c);
+            advance(1);
+        }
+        return result.toString();
+    }
+    
+    private String collectComment() {
+        StringBuilder result = new StringBuilder();
+        while (!eof || bufferPos < bufferEnd) {
+            char c = peekChar();
+            if (c == '\u0000') break; // EOF
+            
+            // Stop at comment close
+            if (peek2("#}")) {
                 break;
             }
             
@@ -358,8 +441,26 @@ public class Lexer implements TokenStream {
     
     private Token processNumber() {
         int startPos = position;
-        String lexeme = collectWhile(Character::isDigit);
-        return new Token(TokenType.NUMBER, lexeme, startPos, position);
+        StringBuilder lexeme = new StringBuilder();
+        
+        // Handle negative numbers
+        if (peekChar() == '-') {
+            lexeme.append('-');
+            advance(1);
+        }
+        
+        // Collect digits
+        lexeme.append(collectWhile(Character::isDigit));
+        
+        // Handle floating point numbers
+        if (peekChar() == '.' && Character.isDigit(peekChar(1))) {
+            lexeme.append('.');
+            advance(1);
+            lexeme.append(collectWhile(Character::isDigit));
+            return new Token(TokenType.FLOAT, lexeme.toString(), startPos, position);
+        }
+        
+        return new Token(TokenType.NUMBER, lexeme.toString(), startPos, position);
     }
     
     private Token processIdentifier() {
@@ -372,6 +473,12 @@ public class Lexer implements TokenStream {
     private Token processText() {
         int startPos = position;
         String lexeme = collectText();
+        return new Token(TokenType.TEXT, lexeme, startPos, position);
+    }
+    
+    private Token processComment() {
+        int startPos = position;
+        String lexeme = collectComment();
         return new Token(TokenType.TEXT, lexeme, startPos, position);
     }
 
@@ -411,6 +518,111 @@ public class Lexer implements TokenStream {
         return new Token(TokenType.NE, "!=", startPos, position);
     }
 
+    // New token processing methods for missing Liquid constructs
+    
+    private Token processCommentOpen() {
+        int startPos = position;
+        advance(2);
+        return new Token(TokenType.COMMENT_OPEN, "{#", startPos, position);
+    }
+    
+    private Token processCommentClose() {
+        int startPos = position;
+        advance(2);
+        return new Token(TokenType.COMMENT_CLOSE, "#}", startPos, position);
+    }
+    
+    private Token processPlus() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.PLUS, "+", startPos, position);
+    }
+    
+    private Token processMinus() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.MINUS, "-", startPos, position);
+    }
+    
+    private Token processMultiply() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.MULTIPLY, "*", startPos, position);
+    }
+    
+    private Token processDivide() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.DIVIDE, "/", startPos, position);
+    }
+    
+    private Token processModulo() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.MODULO, "%", startPos, position);
+    }
+    
+    private Token processExponent() {
+        int startPos = position;
+        advance(2);
+        return new Token(TokenType.EXPONENT, "**", startPos, position);
+    }
+    
+    private Token processLParen() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.LPAREN, "(", startPos, position);
+    }
+    
+    private Token processRParen() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.RPAREN, ")", startPos, position);
+    }
+    
+    private Token processLBracket() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.LBRACKET, "[", startPos, position);
+    }
+    
+    private Token processRBracket() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.RBRACKET, "]", startPos, position);
+    }
+    
+    private Token processLBrace() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.LBRACE, "{", startPos, position);
+    }
+    
+    private Token processRBrace() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.RBRACE, "}", startPos, position);
+    }
+    
+    private Token processQuestion() {
+        int startPos = position;
+        advance(1);
+        return new Token(TokenType.QUESTION, "?", startPos, position);
+    }
+    
+    private Token processRange() {
+        int startPos = position;
+        advance(2);
+        return new Token(TokenType.RANGE, "..", startPos, position);
+    }
+    
+    private Token processWhitespaceControl() {
+        int startPos = position;
+        char c = peekChar();
+        advance(1);
+        return new Token(TokenType.WHITESPACE_CONTROL, String.valueOf(c), startPos, position);
+    }
+
     // Buffer management methods
     private void fillBuffer() {
         if (bufferPos >= bufferEnd && !eof) {
@@ -432,6 +644,12 @@ public class Lexer implements TokenStream {
     private char peekChar() {
         fillBuffer();
         return bufferPos < bufferEnd ? buffer[bufferPos] : '\u0000';
+    }
+    
+    private char peekChar(int offset) {
+        fillBuffer();
+        int pos = bufferPos + offset;
+        return pos < bufferEnd ? buffer[pos] : '\u0000';
     }
 
     private boolean peek2(String s) {
