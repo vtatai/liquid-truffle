@@ -4,15 +4,19 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.*;
 
-public class Lexer {
+public class Lexer implements TokenStream {
     private final Reader reader;
-    private final boolean reportWhitespaceTokens;
     private final char[] buffer = new char[4096]; // Buffer for reading from Reader
     private int bufferEnd = 0;
     private int bufferPos = 0;
     private int position = 0; // Global position counter
     private boolean eof = false;
     private LexerMode currentMode = LexerMode.IN_TEXT;
+    
+    // Streaming state
+    private Token nextToken = null;
+    private boolean hasNextToken = false;
+    private boolean streamInitialized = false;
     
     // Liquid reserved keywords
     private final Set<String> keywords = new HashSet<>(Arrays.asList(
@@ -30,35 +34,117 @@ public class Lexer {
         "first", "last", "size"
     ));
 
-    public Lexer(Reader reader, boolean reportWhitespaceTokens) {
+    public Lexer(Reader reader) {
         this.reader = reader;
-        this.reportWhitespaceTokens = reportWhitespaceTokens;
-    }
-    
-    public Lexer(String src, boolean reportWhitespaceTokens) {
-        this(new StringReader(src), reportWhitespaceTokens);
     }
     
     public Lexer(String src) {
-        this(src, false);
+        this(new StringReader(src));
     }
     
+    /**
+     * This loads all tokens in memory as a list. Please do not use other than for tests or very simple lexing.
+     */
     public List<Token> lex() {
         List<Token> tokens = new ArrayList<>();
         fillBuffer(); // Initial buffer fill
 
         while (!eof || bufferPos < bufferEnd) {
             Token token = processCurrentState();
-            if (reportWhitespaceTokens || token.type() != TokenType.WHITESPACE) {
-                tokens.add(token);
-            }
+            tokens.add(token);
             fillBuffer();
         }
 
         tokens.add(new Token(TokenType.EOF, "", position, position));
         return tokens;
     }
+
+    // TokenStream interface implementation
+    @Override
+    public Token peek() {
+        if (!streamInitialized) {
+            initializeStream();
+        }
+        return nextToken;
+    }
     
+    @Override
+    public Token advance() {
+        if (!streamInitialized) {
+            initializeStream();
+        }
+        Token current = nextToken;
+        if (hasNextToken && current.type() != TokenType.EOF) {
+            nextToken = getNextToken();
+            hasNextToken = nextToken != null;
+        } else {
+            nextToken = null;
+            hasNextToken = false;
+        }
+        return current;
+    }
+    
+    @Override
+    public boolean hasNext() {
+        if (!streamInitialized) {
+            initializeStream();
+        }
+        return hasNextToken;
+    }
+    
+    @Override
+    public int getPosition() {
+        return position;
+    }
+    
+    @Override
+    public Token[] lookAhead(int n) {
+        // For simplicity, we'll implement a basic lookahead
+        // In a more sophisticated implementation, we might want to cache tokens
+        List<Token> tokens = new ArrayList<>();
+        int originalPosition = position;
+        int originalBufferPos = bufferPos;
+        boolean originalEof = eof;
+        LexerMode originalMode = currentMode;
+        
+        try {
+            for (int i = 0; i < n; i++) {
+                if (eof && bufferPos >= bufferEnd) {
+                    break;
+                }
+                Token token = processCurrentState();
+                if (token.type() == TokenType.EOF) {
+                    break;
+                }
+                tokens.add(token);
+                fillBuffer();
+            }
+            return tokens.toArray(new Token[0]);
+        } finally {
+            // Restore state
+            position = originalPosition;
+            bufferPos = originalBufferPos;
+            eof = originalEof;
+            currentMode = originalMode;
+        }
+    }
+    
+    private void initializeStream() {
+        fillBuffer(); // Initial buffer fill
+        nextToken = getNextToken();
+        hasNextToken = (nextToken != null && nextToken.type() != TokenType.EOF);
+        streamInitialized = true;
+    }
+    
+    private Token getNextToken() {
+        if (eof && bufferPos >= bufferEnd) {
+            return new Token(TokenType.EOF, "", position, position);
+        }
+        Token token = processCurrentState();
+        fillBuffer();
+        return token;
+    }
+
     private Token processCurrentState() {
         return switch (currentMode) {
             case IN_TEXT -> processTextMode();
@@ -78,21 +164,22 @@ public class Lexer {
     }
 
     private Token processTagMode() {
+        if (Character.isWhitespace(peekChar())) {
+            skipWhitespace();
+        }
         if (peek2("%}")) {
             return processTagClose();
-        } else if (Character.isWhitespace(peek())) {
-            return processWhitespace();
-        } else if (peek() == '"' || peek() == '\'') {
+        } else if (peekChar() == '"' || peekChar() == '\'') {
             return processString();
-        } else if (Character.isDigit(peek())) {
+        } else if (Character.isDigit(peekChar())) {
             return processNumber();
-        } else if (peek() == '.') {
+        } else if (peekChar() == '.') {
             return processDot();
-        } else if (peek() == '|') {
+        } else if (peekChar() == '|') {
             return processPipe();
-        } else if (peek() == ',') {
+        } else if (peekChar() == ',') {
             return processComma();
-        } else if (peek() == ':') {
+        } else if (peekChar() == ':') {
             return processColon();
         } else if (peek2(">=")) {
             return processGTE();
@@ -102,33 +189,34 @@ public class Lexer {
             return processEQ();
         } else if (peek2("!=")) {
             return processNE();
-        } else if (peek() == '>') {
+        } else if (peekChar() == '>') {
             return processGT();
-        } else if (peek() == '<') {
+        } else if (peekChar() == '<') {
             return processLT();
-        } else if (isIdentStart(peek())) {
+        } else if (isIdentStart(peekChar())) {
             return processIdentifier();
         } else {
-            throw new LexerException("Invalid character in tag mode: " + peek());
+            throw new LexerException("Invalid character in tag mode: " + peekChar());
         }
     }
 
     private Token processObjectMode() {
+        if (Character.isWhitespace(peekChar())) {
+            skipWhitespace();
+        }
         if (peek2("}}")) {
             return processObjClose();
-        } else if (Character.isWhitespace(peek())) {
-            return processWhitespace();
-        } else if (peek() == '"' || peek() == '\'') {
+        } else if (peekChar() == '"' || peekChar() == '\'') {
             return processString();
-        } else if (Character.isDigit(peek())) {
+        } else if (Character.isDigit(peekChar())) {
             return processNumber();
-        } else if (peek() == '.') {
+        } else if (peekChar() == '.') {
             return processDot();
-        } else if (peek() == '|') {
+        } else if (peekChar() == '|') {
             return processPipe();
-        } else if (peek() == ',') {
+        } else if (peekChar() == ',') {
             return processComma();
-        } else if (peek() == ':') {
+        } else if (peekChar() == ':') {
             return processColon();
         } else if (peek2(">=")) {
             return processGTE();
@@ -138,14 +226,14 @@ public class Lexer {
             return processEQ();
         } else if (peek2("!=")) {
             return processNE();
-        } else if (peek() == '>') {
+        } else if (peekChar() == '>') {
             return processGT();
-        } else if (peek() == '<') {
+        } else if (peekChar() == '<') {
             return processLT();
-        } else if (isIdentStart(peek())) {
+        } else if (isIdentStart(peekChar())) {
             return processIdentifier();
         } else {
-            throw new LexerException("Invalid character in object mode: " + peek());
+            throw new LexerException("Invalid character in object mode: " + peekChar());
         }
     }
 
@@ -159,8 +247,8 @@ public class Lexer {
     
     private String collectIdent() {
         StringBuilder result = new StringBuilder();
-        if (isIdentStart(peek())) {
-            result.append(peek());
+        if (isIdentStart(peekChar())) {
+            result.append(peekChar());
             advance(1);
         }
         result.append(collectWhile(this::isIdentPart));
@@ -169,12 +257,12 @@ public class Lexer {
     
     private Token parseString() {
         int startPos = position;
-        char quote = peek();
+        char quote = peekChar();
         advance(1); // consume opening quote
         
         StringBuilder result = new StringBuilder();
         while (!eof || bufferPos < bufferEnd) {
-            char c = peek();
+            char c = peekChar();
             if (c == quote) {
                 advance(1); // consume closing quote
                 break;
@@ -182,7 +270,7 @@ public class Lexer {
             if (c == '\\') {
                 advance(1); // consume backslash
                 if (!eof || bufferPos < bufferEnd) {
-                    char next = peek();
+                    char next = peekChar();
                     result.append(next);
                     advance(1);
                 }
@@ -198,24 +286,17 @@ public class Lexer {
     private String collectText() {
         StringBuilder result = new StringBuilder();
         while (!eof || bufferPos < bufferEnd) {
-            char c = peek();
+            char c = peekChar();
             if (c == '\u0000') break; // EOF
             
             // Stop at special sequences
-            if (peek2("{{") || peek2("}}") || peek2("{%") || peek2("%}")) {
+            if (peek2("{{") || peek2("{%")) {
                 break;
             }
             
             result.append(c);
             advance(1);
         }
-        
-        // Fallback for single character
-        if (result.isEmpty() && (!eof || bufferPos < bufferEnd)) {
-            result.append(peek());
-            advance(1);
-        }
-        
         return result.toString();
     }
 
@@ -248,10 +329,8 @@ public class Lexer {
         return new Token(TokenType.TAG_CLOSE, "%}", startPos, position);
     }
     
-    private Token processWhitespace() {
-        int startPos = position;
-        String lexeme = collectWhile(Character::isWhitespace);
-        return new Token(TokenType.WHITESPACE, lexeme, startPos, position);
+    private void skipWhitespace() {
+        collectWhile(Character::isWhitespace);
     }
     
     private Token processPipe() {
@@ -355,7 +434,7 @@ public class Lexer {
         }
     }
 
-    private char peek() {
+    private char peekChar() {
         fillBuffer();
         return bufferPos < bufferEnd ? buffer[bufferPos] : '\u0000';
     }
@@ -386,7 +465,7 @@ public class Lexer {
                 // Need more data
                 try {
                     int charsRead = reader.read(buffer, bufferEnd, buffer.length - bufferEnd);
-                    if (charsRead == -1) {
+                    if (charsRead <= 0) {
                         break; // EOF
                     }
                     bufferEnd += charsRead;
@@ -418,7 +497,7 @@ public class Lexer {
     private String collectWhile(java.util.function.Predicate<Character> predicate) {
         StringBuilder result = new StringBuilder();
         while (!eof || bufferPos < bufferEnd) {
-            char c = peek();
+            char c = peekChar();
             if (!predicate.test(c)) break;
             result.append(c);
             advance(1);

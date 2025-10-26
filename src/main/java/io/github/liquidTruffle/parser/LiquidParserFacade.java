@@ -3,6 +3,7 @@ package io.github.liquidTruffle.parser;
 import io.github.liquidTruffle.LiquidRuntimeException;
 import io.github.liquidTruffle.lexer.Lexer;
 import io.github.liquidTruffle.lexer.Token;
+import io.github.liquidTruffle.lexer.TokenStream;
 import io.github.liquidTruffle.lexer.TokenType;
 import io.github.liquidTruffle.parser.ast.AstNode;
 import io.github.liquidTruffle.parser.ast.nodes.*;
@@ -14,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 
 public class LiquidParserFacade {
-    private List<Token> tokens;
-    private int p = 0;
+    private TokenStream tokenStream;
+    private Token lastConsumedToken = null;
     private Map<String, FilterFunction> filterFunctions = Map.of(
             "append", new FilterFunction("append", params -> params[0].toString() + params[1].toString()),
             "capitalize", new FilterFunction("capitalize", params -> params[0].toString().toUpperCase()),
@@ -32,10 +33,9 @@ public class LiquidParserFacade {
     }
     
     public List<AstNode> parseNodes(Reader reader) {
-        tokens = new Lexer(reader, false).lex();
-        p = 0;
+        tokenStream = new Lexer(reader);
         List<AstNode> nodes = new ArrayList<>();
-        while (!match(TokenType.EOF)) {
+        while (tokenStream.hasNext()) {
             if (check(TokenType.TEXT)) {
                 nodes.add(new TextNode(advance().lexeme()));
             } else if (match(TokenType.OBJECT_OPEN)) {
@@ -43,12 +43,10 @@ public class LiquidParserFacade {
             } else if (match(TokenType.TAG_OPEN)) {
                 nodes.add(parseTag());
                 expect(TokenType.TAG_CLOSE, "Expected '%}'");
-            } else if (check(TokenType.WHITESPACE)) {
-                // keep whitespace outside tags/vars as text
-                nodes.add(new TextNode(advance().lexeme()));
+            } else if (match(TokenType.EOF)) {
+                break;
             } else {
-                // fallback consume
-                nodes.add(new TextNode(advance().lexeme()));
+                throw new LiquidParserException("Found extraneous token when parsing " + tokenStream.advance());
             }
         }
         return nodes;
@@ -59,8 +57,6 @@ public class LiquidParserFacade {
     }
 
     private AstNode parseObject() {
-        skipSpace();
-        
         // Check if this is a literal or a variable
         AstNode child;
         if (check(TokenType.STRING) || check(TokenType.NUMBER) || check(TokenType.KEYWORD)) {
@@ -73,7 +69,6 @@ public class LiquidParserFacade {
             throw new LiquidParserException("First part of object should be a literal or variable ref");
         }
 
-        skipSpace();
         if (check(TokenType.OBJECT_CLOSE)) {
             advance();
             return new LiquidObjectNode(child);
@@ -92,7 +87,6 @@ public class LiquidParserFacade {
             expect(TokenType.PIPE, "Expected '|'");
             FilterNode filter = parseFilter();
             current = new FilterNode(filter.getFilterFunction(), current, filter.getParameters());
-            skipSpace();
         }
         
         return current;
@@ -108,16 +102,13 @@ public class LiquidParserFacade {
         // Parse filter parameters if present
         List<AstNode> params = new ArrayList<>();
         if (match(TokenType.COLON)) {
-            skipSpace();
             // Parse comma-separated parameters
             do {
-                skipSpace();
                 if (check(TokenType.STRING) || check(TokenType.NUMBER) || check(TokenType.KEYWORD) || check(TokenType.IDENT)) {
                     params.add(literal());
                 } else {
                     throw new LiquidParserException("Expected parameter after colon in filter " + functionName);
                 }
-                skipSpace();
             } while (match(TokenType.COMMA));
         }
         
@@ -136,15 +127,12 @@ public class LiquidParserFacade {
     }
 
     private AstNode parseVariableRef() {
-        skipSpace();
         String name = ident();
         return new VariableRefNode(name);
     }
 
     private AstNode parseTag() {
-        skipSpace();
         String kw = ident();
-        skipSpace();
         if (kw.isBlank()) {
             return null;
         }
@@ -152,18 +140,40 @@ public class LiquidParserFacade {
             String varName = ident();
             expect(TokenType.TAG_CLOSE, "Expected '%}' after if condition");
             List<AstNode> body = new ArrayList<>();
-            while (!(matchSeq(TokenType.TAG_OPEN, TokenType.IDENT, TokenType.TAG_CLOSE) && 
-                     prev(1).lexeme().equals("endif"))) {
-                if (check(TokenType.EOF)) break;
-                if (check(TokenType.TEXT) || check(TokenType.WHITESPACE)) {
+            while (tokenStream.hasNext()) {
+                if (check(TokenType.TAG_OPEN)) {
+                    // Use lookahead to check if this is an endif
+                    Token[] lookahead = tokenStream.lookAhead(3);
+                    if (lookahead.length >= 3 && 
+                        lookahead[0].type() == TokenType.TAG_OPEN &&
+                        lookahead[1].type() == TokenType.IDENT && 
+                        lookahead[1].lexeme().equals("endif") &&
+                        lookahead[2].type() == TokenType.TAG_CLOSE) {
+                        // This is an endif, consume it and break
+                        advance(); // consume TAG_OPEN
+                        advance(); // consume "endif"
+                        advance(); // consume TAG_CLOSE
+                        break;
+                    } else {
+                        // This is not an endif, parse it as content
+                        if (check(TokenType.TEXT)) {
+                            body.add(new TextNode(advance().lexeme()));
+                        } else if (match(TokenType.OBJECT_OPEN)) {
+                            body.add(parseObject());
+                            expect(TokenType.OBJECT_CLOSE, "Expected '}}'");
+                        } else if (match(TokenType.TAG_OPEN)) {
+                            AstNode nested = parseTag();
+                            expect(TokenType.TAG_CLOSE, "Expected '%}'");
+                            if (nested != null) body.add(nested);
+                        } else {
+                            body.add(new TextNode(advance().lexeme()));
+                        }
+                    }
+                } else if (check(TokenType.TEXT)) {
                     body.add(new TextNode(advance().lexeme()));
                 } else if (match(TokenType.OBJECT_OPEN)) {
                     body.add(parseObject());
                     expect(TokenType.OBJECT_CLOSE, "Expected '}}'");
-                } else if (match(TokenType.TAG_OPEN)) {
-                    AstNode nested = parseTag();
-                    expect(TokenType.TAG_CLOSE, "Expected '%}'");
-                    if (nested != null) body.add(nested);
                 } else {
                     body.add(new TextNode(advance().lexeme()));
                 }
@@ -171,10 +181,6 @@ public class LiquidParserFacade {
             return new IfNode(varName, body.toArray(new AstNode[0]));
         }
         throw new LiquidParserException("Unsupported / unexpected tag command " + kw);
-    }
-
-    private void skipSpace() {
-        while (check(TokenType.WHITESPACE)) advance();
     }
 
     private String ident() {
@@ -199,7 +205,8 @@ public class LiquidParserFacade {
     }
 
     private boolean check(TokenType t) {
-        return peek().type() == t;
+        Token token = peek();
+        return token != null && token.type() == t;
     }
 
     private boolean match(TokenType t) {
@@ -228,18 +235,20 @@ public class LiquidParserFacade {
     }
 
     private Token advance() {
-        return tokens.get(p++);
+        lastConsumedToken = tokenStream.advance();
+        return lastConsumedToken;
     }
     
     private Token prev() {
-        return tokens.get(p - 1);
+        return lastConsumedToken;
     }
     
     private Token prev(int back) {
-        return tokens.get(p - back);
+        // Note: This is a limitation of streaming - we can't look back
+        throw new UnsupportedOperationException("Cannot look back in streaming mode");
     }
     
     private Token peek() {
-        return tokens.get(p);
+        return tokenStream.peek();
     }
 }

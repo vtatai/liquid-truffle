@@ -85,10 +85,6 @@ public class LexerTest {
         Lexer lexer = new Lexer(src);
         List<Token> tokens = lexer.lex();
         
-        // Should not report whitespace tokens by default
-        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.type() == TokenType.WHITESPACE);
-        assertThat(hasWhitespace).isFalse();
-        
         // Should have the other expected tokens
         List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
         assertThat(tokenTypes).containsExactly(
@@ -100,41 +96,10 @@ public class LexerTest {
     }
 
     @Test
-    public void lexerReportsWhitespaceTokensWhenEnabled() {
-        String src = "{{ variable }}";
-        Lexer lexer = new Lexer(src, true);
-        List<Token> tokens = lexer.lex();
-        
-        // Should report whitespace tokens when explicitly enabled
-        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.type() == TokenType.WHITESPACE);
-        assertThat(hasWhitespace).isTrue();
-        
-        // Should have the expected tokens including whitespace
-        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
-        assertThat(tokenTypes).containsExactly(
-            TokenType.OBJECT_OPEN,
-            TokenType.WHITESPACE,
-            TokenType.IDENT,
-            TokenType.WHITESPACE,
-            TokenType.OBJECT_CLOSE,
-            TokenType.EOF
-        );
-        
-        // Should have more tokens than default behavior
-        Lexer defaultLexer = new Lexer(src);
-        List<Token> defaultTokens = defaultLexer.lex();
-        assertThat(tokens).hasSizeGreaterThan(defaultTokens.size());
-    }
-
-    @Test
     public void lexerHandlesTextWithoutWhitespaceTokens() {
         String src = "Hello World";
         Lexer lexer = new Lexer(src);
         List<Token> tokens = lexer.lex();
-        
-        // Should not report whitespace tokens
-        boolean hasWhitespace = tokens.stream().anyMatch(t -> t.type() == TokenType.WHITESPACE);
-        assertThat(hasWhitespace).isFalse();
         
         // Should have IDENT tokens for "Hello" and "World"
         List<Token> textTokens = tokens.stream().filter(t -> t.type() == TokenType.TEXT).collect(Collectors.toList());
@@ -146,7 +111,7 @@ public class LexerTest {
     public void lexerWorksWithReader() {
         String src = "{{ variable | filter }}";
         StringReader reader = new StringReader(src);
-        Lexer lexer = new Lexer(reader, false);
+        Lexer lexer = new Lexer(reader);
         List<Token> tokens = lexer.lex();
         
         // Should produce the same tokens as String constructor

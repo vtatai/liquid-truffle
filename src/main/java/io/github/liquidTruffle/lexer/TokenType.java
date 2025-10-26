@@ -20,6 +20,5 @@ public enum TokenType {
     LTE,           // <=
     EQ,            // ==
     NE,            // !=
-    WHITESPACE,
     EOF
 }
