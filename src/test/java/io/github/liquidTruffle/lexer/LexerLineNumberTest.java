@@ -13,33 +13,38 @@ public class LexerLineNumberTest {
         Lexer lexer = new Lexer(template);
         List<Token> tokens = lexer.lex();
 
-        // First text token should be on line 1 (where it starts)
+        // First text token should be on line 1, column 1 (where it starts)
         Token firstText = tokens.get(0);
         assertThat(firstText.type()).isEqualTo(TokenType.TEXT);
         assertThat(firstText.lexeme()).isEqualTo("Hello World\n");
         assertThat(firstText.line()).isEqualTo(1);
+        assertThat(firstText.column()).isEqualTo(1);
 
-        // Object open should be on line 2
+        // Object open should be on line 2, column 1
         Token objectOpen = tokens.get(1);
         assertThat(objectOpen.type()).isEqualTo(TokenType.OBJECT_OPEN);
         assertThat(objectOpen.line()).isEqualTo(2);
+        assertThat(objectOpen.column()).isEqualTo(1);
 
-        // Identifier should be on line 2
+        // Identifier should be on line 2, column 4 (after "{{ ")
         Token identifier = tokens.get(2);
         assertThat(identifier.type()).isEqualTo(TokenType.IDENT);
         assertThat(identifier.lexeme()).isEqualTo("name");
         assertThat(identifier.line()).isEqualTo(2);
+        assertThat(identifier.column()).isEqualTo(4);
 
-        // Object close should be on line 2
+        // Object close should be on line 2, column 9 (after "name ")
         Token objectClose = tokens.get(3);
         assertThat(objectClose.type()).isEqualTo(TokenType.OBJECT_CLOSE);
         assertThat(objectClose.line()).isEqualTo(2);
+        assertThat(objectClose.column()).isEqualTo(9);
 
-        // Second text token should be on line 2 (where it starts)
+        // Second text token should be on line 2, column 11 (where it starts)
         Token secondText = tokens.get(4);
         assertThat(secondText.type()).isEqualTo(TokenType.TEXT);
         assertThat(secondText.lexeme()).isEqualTo("\nGoodbye");
         assertThat(secondText.line()).isEqualTo(2);
+        assertThat(secondText.column()).isEqualTo(11);
     }
 
     @Test
