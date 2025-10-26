@@ -1,9 +1,9 @@
 package io.github.liquidTruffle.lexer;
 
-public record Token(TokenType type, String lexeme, int start, int end) {
+public record Token(TokenType type, String lexeme, int line, int start, int end) {
 
     @Override
     public String toString() {
-        return type + "(" + lexeme + ")@" + start + ".." + end;
+        return type + "(" + lexeme + ")@" + line + ":" + start + ".." + end;
     }
 }

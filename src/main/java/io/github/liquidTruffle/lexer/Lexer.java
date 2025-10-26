@@ -10,6 +10,8 @@ public class Lexer implements TokenStream {
     private int bufferEnd = 0;
     private int bufferPos = 0;
     private int position = 0; // Global position counter
+    private int line = 1; // Current line number (1-based)
+    private int column = 1; // Current column number (1-based)
     private boolean eof = false;
     private LexerMode currentMode = LexerMode.IN_TEXT;
     
@@ -55,7 +57,7 @@ public class Lexer implements TokenStream {
             fillBuffer();
         }
 
-        tokens.add(new Token(TokenType.EOF, "", position, position));
+        tokens.add(new Token(TokenType.EOF, "", getCurrentLine(), getCurrentColumn(), getCurrentColumn()));
         return tokens;
     }
 
@@ -133,7 +135,7 @@ public class Lexer implements TokenStream {
     
     private Token getNextToken() {
         if (eof && bufferPos >= bufferEnd) {
-            return new Token(TokenType.EOF, "", position, position);
+            return new Token(TokenType.EOF, "", getCurrentLine(), getCurrentColumn(), getCurrentColumn());
         }
         Token token = processCurrentState();
         fillBuffer();
@@ -318,6 +320,7 @@ public class Lexer implements TokenStream {
     
     private Token parseString() {
         int startPos = position;
+        int startLine = getCurrentLine();
         char quote = peekChar();
         advance(1); // consume opening quote
         
@@ -341,7 +344,7 @@ public class Lexer implements TokenStream {
             }
         }
         
-        return new Token(TokenType.STRING, result.toString(), startPos, position);
+        return new Token(TokenType.STRING, result.toString(), startLine, startPos, position);
     }
     
     private String collectText() {
@@ -381,62 +384,66 @@ public class Lexer implements TokenStream {
     // Processing functions
     private Token processObjOpen() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
         
         // Check for whitespace control
         if (peekChar() == '-') {
             advance(1);
             currentMode = LexerMode.IN_OBJ;
-            return new Token(TokenType.OBJECT_OPEN_WS, "{{-", startPos, position);
+            return new Token(TokenType.OBJECT_OPEN_WS, "{{-", startLine, startPos, position);
         }
         
         currentMode = LexerMode.IN_OBJ;
-        return new Token(TokenType.OBJECT_OPEN, "{{", startPos, position);
+        return new Token(TokenType.OBJECT_OPEN, "{{", startLine, startPos, position);
     }
 
     private Token processObjClose() {
         int startPos = position;
+        int startLine = getCurrentLine();
         
         // Check for whitespace control before advancing
         if (peekChar(-1) == '-') {
             advance(2);
             currentMode = LexerMode.IN_TEXT;
-            return new Token(TokenType.OBJECT_CLOSE_WS, "-}}", startPos - 1, position);
+            return new Token(TokenType.OBJECT_CLOSE_WS, "-}}", startLine, startPos - 1, position);
         }
         
         advance(2);
         currentMode = LexerMode.IN_TEXT;
-        return new Token(TokenType.OBJECT_CLOSE, "}}", startPos, position);
+        return new Token(TokenType.OBJECT_CLOSE, "}}", startLine, startPos, position);
     }
 
     private Token processTagOpen() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
         
         // Check for whitespace control
         if (peekChar() == '-') {
             advance(1);
             currentMode = LexerMode.IN_TAG;
-            return new Token(TokenType.TAG_OPEN_WS, "{%-", startPos, position);
+            return new Token(TokenType.TAG_OPEN_WS, "{%-", startLine, startPos, position);
         }
         
         currentMode = LexerMode.IN_TAG;
-        return new Token(TokenType.TAG_OPEN, "{%", startPos, position);
+        return new Token(TokenType.TAG_OPEN, "{%", startLine, startPos, position);
     }
     
     private Token processTagClose() {
         int startPos = position;
+        int startLine = getCurrentLine();
         
         // Check for whitespace control before advancing
         if (peekChar(-1) == '-') {
             advance(2);
             currentMode = LexerMode.IN_TEXT;
-            return new Token(TokenType.TAG_CLOSE_WS, "-%}", startPos - 1, position);
+            return new Token(TokenType.TAG_CLOSE_WS, "-%}", startLine, startPos - 1, position);
         }
         
         advance(2);
         currentMode = LexerMode.IN_TEXT;
-        return new Token(TokenType.TAG_CLOSE, "%}", startPos, position);
+        return new Token(TokenType.TAG_CLOSE, "%}", startLine, startPos, position);
     }
     
     private void skipWhitespace() {
@@ -445,26 +452,30 @@ public class Lexer implements TokenStream {
     
     private Token processPipe() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.PIPE, "|", startPos, position);
+        return new Token(TokenType.PIPE, "|", startLine, startPos, position);
     }
     
     private Token processColon() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.COLON, ":", startPos, position);
+        return new Token(TokenType.COLON, ":", startLine, startPos, position);
     }
     
     private Token processComma() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.COMMA, ",", startPos, position);
+        return new Token(TokenType.COMMA, ",", startLine, startPos, position);
     }
     
     private Token processDot() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.DOT, ".", startPos, position);
+        return new Token(TokenType.DOT, ".", startLine, startPos, position);
     }
 
     private Token processString() {
@@ -473,6 +484,7 @@ public class Lexer implements TokenStream {
     
     private Token processNumber() {
         int startPos = position;
+        int startLine = getCurrentLine();
         StringBuilder lexeme = new StringBuilder();
         
         // Handle negative numbers
@@ -489,163 +501,188 @@ public class Lexer implements TokenStream {
             lexeme.append('.');
             advance(1);
             lexeme.append(collectWhile(Character::isDigit));
-            return new Token(TokenType.FLOAT, lexeme.toString(), startPos, position);
+            return new Token(TokenType.FLOAT, lexeme.toString(), startLine, startPos, position);
         }
         
-        return new Token(TokenType.NUMBER, lexeme.toString(), startPos, position);
+        return new Token(TokenType.NUMBER, lexeme.toString(), startLine, startPos, position);
     }
     
     private Token processIdentifier() {
         int startPos = position;
+        int startLine = getCurrentLine();
         String lexeme = collectIdent();
         TokenType tokenType = keywords.contains(lexeme) ? TokenType.KEYWORD : TokenType.IDENT;
-        return new Token(tokenType, lexeme, startPos, position);
+        return new Token(tokenType, lexeme, startLine, startPos, position);
     }
     
     private Token processText() {
         int startPos = position;
+        int startLine = getCurrentLine();
         String lexeme = collectText();
-        return new Token(TokenType.TEXT, lexeme, startPos, position);
+        return new Token(TokenType.TEXT, lexeme, startLine, startPos, position);
     }
     
     private Token processComment() {
         int startPos = position;
+        int startLine = getCurrentLine();
         String lexeme = collectComment();
-        return new Token(TokenType.TEXT, lexeme, startPos, position);
+        return new Token(TokenType.TEXT, lexeme, startLine, startPos, position);
     }
 
     private Token processGT() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.GT, ">", startPos, position);
+        return new Token(TokenType.GT, ">", startLine, startPos, position);
     }
 
     private Token processLT() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.LT, "<", startPos, position);
+        return new Token(TokenType.LT, "<", startLine, startPos, position);
     }
 
     private Token processGTE() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
-        return new Token(TokenType.GTE, ">=", startPos, position);
+        return new Token(TokenType.GTE, ">=", startLine, startPos, position);
     }
 
     private Token processLTE() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
-        return new Token(TokenType.LTE, "<=", startPos, position);
+        return new Token(TokenType.LTE, "<=", startLine, startPos, position);
     }
 
     private Token processEQ() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
-        return new Token(TokenType.EQ, "==", startPos, position);
+        return new Token(TokenType.EQ, "==", startLine, startPos, position);
     }
 
     private Token processNE() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
-        return new Token(TokenType.NE, "!=", startPos, position);
+        return new Token(TokenType.NE, "!=", startLine, startPos, position);
     }
 
     // New token processing methods for missing Liquid constructs
     
     private Token processCommentOpen() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
-        return new Token(TokenType.COMMENT_OPEN, "{#", startPos, position);
+        return new Token(TokenType.COMMENT_OPEN, "{#", startLine, startPos, position);
     }
     
     private Token processCommentClose() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
-        return new Token(TokenType.COMMENT_CLOSE, "#}", startPos, position);
+        return new Token(TokenType.COMMENT_CLOSE, "#}", startLine, startPos, position);
     }
     
     private Token processPlus() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.PLUS, "+", startPos, position);
+        return new Token(TokenType.PLUS, "+", startLine, startPos, position);
     }
     
     private Token processMinus() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.MINUS, "-", startPos, position);
+        return new Token(TokenType.MINUS, "-", startLine, startPos, position);
     }
     
     private Token processMultiply() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.MULTIPLY, "*", startPos, position);
+        return new Token(TokenType.MULTIPLY, "*", startLine, startPos, position);
     }
     
     private Token processDivide() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.DIVIDE, "/", startPos, position);
+        return new Token(TokenType.DIVIDE, "/", startLine, startPos, position);
     }
     
     private Token processModulo() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.MODULO, "%", startPos, position);
+        return new Token(TokenType.MODULO, "%", startLine, startPos, position);
     }
     
     private Token processExponent() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
-        return new Token(TokenType.EXPONENT, "**", startPos, position);
+        return new Token(TokenType.EXPONENT, "**", startLine, startPos, position);
     }
     
     private Token processLParen() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.LPAREN, "(", startPos, position);
+        return new Token(TokenType.LPAREN, "(", startLine, startPos, position);
     }
     
     private Token processRParen() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.RPAREN, ")", startPos, position);
+        return new Token(TokenType.RPAREN, ")", startLine, startPos, position);
     }
     
     private Token processLBracket() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.LBRACKET, "[", startPos, position);
+        return new Token(TokenType.LBRACKET, "[", startLine, startPos, position);
     }
     
     private Token processRBracket() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.RBRACKET, "]", startPos, position);
+        return new Token(TokenType.RBRACKET, "]", startLine, startPos, position);
     }
     
     private Token processLBrace() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.LBRACE, "{", startPos, position);
+        return new Token(TokenType.LBRACE, "{", startLine, startPos, position);
     }
     
     private Token processRBrace() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.RBRACE, "}", startPos, position);
+        return new Token(TokenType.RBRACE, "}", startLine, startPos, position);
     }
     
     private Token processQuestion() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(1);
-        return new Token(TokenType.QUESTION, "?", startPos, position);
+        return new Token(TokenType.QUESTION, "?", startLine, startPos, position);
     }
     
     private Token processRange() {
         int startPos = position;
+        int startLine = getCurrentLine();
         advance(2);
-        return new Token(TokenType.RANGE, "..", startPos, position);
+        return new Token(TokenType.RANGE, "..", startLine, startPos, position);
     }
 
     // Buffer management methods
@@ -722,10 +759,24 @@ public class Lexer implements TokenStream {
         return result.toString();
     }
 
+    private int getCurrentLine() {
+        return line;
+    }
+    
+    private int getCurrentColumn() {
+        return column;
+    }
     private void advance(int count) {
         for (int i = 0; i < count; i++) {
             fillBuffer();
             if (bufferPos < bufferEnd) {
+                char ch = buffer[bufferPos];
+                if (ch == '\n') {
+                    line++;
+                    column = 1;
+                } else {
+                    column++;
+                }
                 bufferPos++;
                 position++;
             }
