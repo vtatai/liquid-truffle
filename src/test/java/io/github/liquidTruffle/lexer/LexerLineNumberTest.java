@@ -14,7 +14,7 @@ public class LexerLineNumberTest {
         List<Token> tokens = lexer.lex();
 
         // First text token should be on line 1, column 1 (where it starts)
-        Token firstText = tokens.get(0);
+        Token firstText = tokens.getFirst();
         assertThat(firstText.type()).isEqualTo(TokenType.TEXT);
         assertThat(firstText.lexeme()).isEqualTo("Hello World\n");
         assertThat(firstText.line()).isEqualTo(1);
@@ -54,7 +54,7 @@ public class LexerLineNumberTest {
         List<Token> tokens = lexer.lex();
         
         // First text should be on line 1 (where it starts)
-        Token firstText = tokens.get(0);
+        Token firstText = tokens.getFirst();
         assertThat(firstText.type()).isEqualTo(TokenType.TEXT);
         assertThat(firstText.lexeme()).isEqualTo("Hello\n");
         assertThat(firstText.line()).isEqualTo(1);
@@ -73,7 +73,7 @@ public class LexerLineNumberTest {
         List<Token> tokens = lexer.lex();
         
         // First tag open should be on line 1
-        Token firstTagOpen = tokens.get(0);
+        Token firstTagOpen = tokens.getFirst();
         assertThat(firstTagOpen.type()).isEqualTo(TokenType.TAG_OPEN);
         assertThat(firstTagOpen.line()).isEqualTo(1);
         
@@ -124,7 +124,7 @@ public class LexerLineNumberTest {
         List<Token> tokens = lexer.lex();
         
         // Object open should be on line 1
-        Token objectOpen = tokens.get(0);
+        Token objectOpen = tokens.getFirst();
         assertThat(objectOpen.type()).isEqualTo(TokenType.OBJECT_OPEN);
         assertThat(objectOpen.line()).isEqualTo(1);
         
@@ -142,24 +142,25 @@ public class LexerLineNumberTest {
 
     @Test
     public void testComplexMultilineTemplate() {
-        String template = "Header\n" +
-                         "{% if user %}\n" +
-                         "  Welcome {{ user.name | \n" +
-                         "    upcase }}\n" +
-                         "  {% for item in \n" +
-                         "    items %}\n" +
-                         "    {{ item.title }}\n" +
-                         "  {% endfor %}\n" +
-                         "{% else %}\n" +
-                         "  Please login\n" +
-                         "{% endif %}\n" +
-                         "Footer";
+        String template = """
+                Header
+                {% if user %}
+                  Welcome {{ user.name |\s
+                    upcase }}
+                  {% for item in\s
+                    items %}
+                    {{ item.title }}
+                  {% endfor %}
+                {% else %}
+                  Please login
+                {% endif %}
+                Footer""";
         
         Lexer lexer = new Lexer(template);
         List<Token> tokens = lexer.lex();
         
         // Header text should be on line 1 (where it starts)
-        Token header = tokens.get(0);
+        Token header = tokens.getFirst();
         assertThat(header.type()).isEqualTo(TokenType.TEXT);
         assertThat(header.lexeme()).isEqualTo("Header\n");
         assertThat(header.line()).isEqualTo(1);
@@ -237,7 +238,7 @@ public class LexerLineNumberTest {
         List<Token> tokens = lexer.lex();
         
         // Object open with whitespace control should be on line 1
-        Token objectOpen = tokens.get(0);
+        Token objectOpen = tokens.getFirst();
         assertThat(objectOpen.type()).isEqualTo(TokenType.OBJECT_OPEN_WS);
         assertThat(objectOpen.line()).isEqualTo(1);
         
@@ -271,7 +272,7 @@ public class LexerLineNumberTest {
         List<Token> tokens = lexer.lex();
         
         // First text should be on line 1 (where it starts)
-        Token firstText = tokens.get(0);
+        Token firstText = tokens.getFirst();
         assertThat(firstText.type()).isEqualTo(TokenType.TEXT);
         assertThat(firstText.lexeme()).isEqualTo("Line 1\n\n\nLine 4\n");
         assertThat(firstText.line()).isEqualTo(1);
@@ -301,18 +302,19 @@ public class LexerLineNumberTest {
 
     @Test
     public void testLineNumbersWithNestedStructures() {
-        String template = "{% for item in items %}\n" +
-                         "  {% if item.active %}\n" +
-                         "    {{ item.name | \n" +
-                         "      upcase }}\n" +
-                         "  {% endif %}\n" +
-                         "{% endfor %}";
+        String template = """
+                {% for item in items %}
+                  {% if item.active %}
+                    {{ item.name |\s
+                      upcase }}
+                  {% endif %}
+                {% endfor %}""";
         
         Lexer lexer = new Lexer(template);
         List<Token> tokens = lexer.lex();
         
         // First for tag should be on line 1
-        Token forTag = tokens.get(0);
+        Token forTag = tokens.getFirst();
         assertThat(forTag.type()).isEqualTo(TokenType.TAG_OPEN);
         assertThat(forTag.line()).isEqualTo(1);
         

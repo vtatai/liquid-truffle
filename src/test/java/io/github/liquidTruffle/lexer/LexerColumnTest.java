@@ -14,7 +14,7 @@ public class LexerColumnTest {
         List<Token> tokens = lexer.lex();
 
         // First text token should start at column 1
-        Token firstText = tokens.get(0);
+        Token firstText = tokens.getFirst();
         assertThat(firstText.type()).isEqualTo(TokenType.TEXT);
         assertThat(firstText.lexeme()).isEqualTo("Hello ");
         assertThat(firstText.line()).isEqualTo(1);
@@ -54,7 +54,7 @@ public class LexerColumnTest {
         List<Token> tokens = lexer.lex();
 
         // First text token should start at column 1, line 1
-        Token firstText = tokens.get(0);
+        Token firstText = tokens.getFirst();
         assertThat(firstText.type()).isEqualTo(TokenType.TEXT);
         assertThat(firstText.lexeme()).isEqualTo("Line 1\n  ");
         assertThat(firstText.line()).isEqualTo(1);
@@ -94,7 +94,7 @@ public class LexerColumnTest {
         List<Token> tokens = lexer.lex();
 
         // First tag open should start at column 1
-        Token tagOpen = tokens.get(0);
+        Token tagOpen = tokens.getFirst();
         assertThat(tagOpen.type()).isEqualTo(TokenType.TAG_OPEN);
         assertThat(tagOpen.line()).isEqualTo(1);
         assertThat(tagOpen.column()).isEqualTo(1);
@@ -153,7 +153,7 @@ public class LexerColumnTest {
         List<Token> tokens = lexer.lex();
 
         // Object open should start at column 1
-        Token objectOpen = tokens.get(0);
+        Token objectOpen = tokens.getFirst();
         assertThat(objectOpen.type()).isEqualTo(TokenType.OBJECT_OPEN);
         assertThat(objectOpen.line()).isEqualTo(1);
         assertThat(objectOpen.column()).isEqualTo(1);
@@ -179,7 +179,7 @@ public class LexerColumnTest {
         List<Token> tokens = lexer.lex();
 
         // Object open should start at column 1
-        Token objectOpen = tokens.get(0);
+        Token objectOpen = tokens.getFirst();
         assertThat(objectOpen.type()).isEqualTo(TokenType.OBJECT_OPEN);
         assertThat(objectOpen.line()).isEqualTo(1);
         assertThat(objectOpen.column()).isEqualTo(1);
@@ -231,7 +231,7 @@ public class LexerColumnTest {
         List<Token> tokens = lexer.lex();
 
         // Object open with whitespace control should start at column 1
-        Token objectOpen = tokens.get(0);
+        Token objectOpen = tokens.getFirst();
         assertThat(objectOpen.type()).isEqualTo(TokenType.OBJECT_OPEN_WS);
         assertThat(objectOpen.lexeme()).isEqualTo("{{-");
         assertThat(objectOpen.line()).isEqualTo(1);
