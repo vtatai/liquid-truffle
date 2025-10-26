@@ -37,12 +37,16 @@ public enum TokenType {
     LBRACE,        // {
     RBRACE,        // }
     
-    // Whitespace control
-    WHITESPACE_CONTROL, // - or ~
     
     // Comments
     COMMENT_OPEN,  // {#
     COMMENT_CLOSE, // #}
+    
+    // Whitespace control variants
+    OBJECT_OPEN_WS,    // {{-
+    OBJECT_CLOSE_WS,   // -}}
+    TAG_OPEN_WS,       // {%-
+    TAG_CLOSE_WS,      // -%}
     
     // Ternary operator
     QUESTION,      // ?

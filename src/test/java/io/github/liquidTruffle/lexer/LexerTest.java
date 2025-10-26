@@ -399,7 +399,19 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
-        assertThat(tokenTypes).contains(TokenType.MINUS);
+        assertThat(tokenTypes).contains(TokenType.OBJECT_OPEN_WS);
+        assertThat(tokenTypes).contains(TokenType.OBJECT_CLOSE_WS);
+    }
+
+    @Test
+    public void lexerHandlesTagWhitespaceControl() {
+        String src = "{%- if true -%}";
+        Lexer lexer = new Lexer(src);
+        List<Token> tokens = lexer.lex();
+        
+        List<TokenType> tokenTypes = tokens.stream().map(Token::type).collect(Collectors.toList());
+        assertThat(tokenTypes).contains(TokenType.TAG_OPEN_WS);
+        assertThat(tokenTypes).contains(TokenType.TAG_CLOSE_WS);
     }
 
     @Test

@@ -382,12 +382,28 @@ public class Lexer implements TokenStream {
     private Token processObjOpen() {
         int startPos = position;
         advance(2);
+        
+        // Check for whitespace control
+        if (peekChar() == '-') {
+            advance(1);
+            currentMode = LexerMode.IN_OBJ;
+            return new Token(TokenType.OBJECT_OPEN_WS, "{{-", startPos, position);
+        }
+        
         currentMode = LexerMode.IN_OBJ;
         return new Token(TokenType.OBJECT_OPEN, "{{", startPos, position);
     }
 
     private Token processObjClose() {
         int startPos = position;
+        
+        // Check for whitespace control before advancing
+        if (peekChar(-1) == '-') {
+            advance(2);
+            currentMode = LexerMode.IN_TEXT;
+            return new Token(TokenType.OBJECT_CLOSE_WS, "-}}", startPos - 1, position);
+        }
+        
         advance(2);
         currentMode = LexerMode.IN_TEXT;
         return new Token(TokenType.OBJECT_CLOSE, "}}", startPos, position);
@@ -396,12 +412,28 @@ public class Lexer implements TokenStream {
     private Token processTagOpen() {
         int startPos = position;
         advance(2);
+        
+        // Check for whitespace control
+        if (peekChar() == '-') {
+            advance(1);
+            currentMode = LexerMode.IN_TAG;
+            return new Token(TokenType.TAG_OPEN_WS, "{%-", startPos, position);
+        }
+        
         currentMode = LexerMode.IN_TAG;
         return new Token(TokenType.TAG_OPEN, "{%", startPos, position);
     }
     
     private Token processTagClose() {
         int startPos = position;
+        
+        // Check for whitespace control before advancing
+        if (peekChar(-1) == '-') {
+            advance(2);
+            currentMode = LexerMode.IN_TEXT;
+            return new Token(TokenType.TAG_CLOSE_WS, "-%}", startPos - 1, position);
+        }
+        
         advance(2);
         currentMode = LexerMode.IN_TEXT;
         return new Token(TokenType.TAG_CLOSE, "%}", startPos, position);
@@ -614,13 +646,6 @@ public class Lexer implements TokenStream {
         int startPos = position;
         advance(2);
         return new Token(TokenType.RANGE, "..", startPos, position);
-    }
-    
-    private Token processWhitespaceControl() {
-        int startPos = position;
-        char c = peekChar();
-        advance(1);
-        return new Token(TokenType.WHITESPACE_CONTROL, String.valueOf(c), startPos, position);
     }
 
     // Buffer management methods
