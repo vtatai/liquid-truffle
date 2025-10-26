@@ -5,20 +5,22 @@ import io.github.liquidTruffle.runtime.LiquidRuntimeUtils;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
-@NodeInfo(description = "Represents conditional if statements that render content based on variable truthiness")
+@NodeInfo(description = "Represents conditional if statements that render content based on condition truthiness")
 public class IfNode extends AstNode {
-    private final String variableName;
-    private final AstNode[] body;
+    @Child
+    private AstNode condition;
+    @Children
+    private AstNode[] body;
     
-    public IfNode(String variableName, AstNode[] body) {
-        this.variableName = variableName;
+    public IfNode(AstNode condition, AstNode[] body) {
+        this.condition = condition;
         this.body = body;
     }
     
     @Override
     public String executeGeneric(VirtualFrame frame) {
-        Object v = LiquidRuntimeUtils.getVariable(frame, variableName);
-        if (LiquidRuntimeUtils.isTruthy(v)) {
+        Object conditionValue = condition.executeGeneric(frame);
+        if (LiquidRuntimeUtils.isTruthy(conditionValue)) {
             StringBuilder result = new StringBuilder();
             for (AstNode node : body) {
                 Object value = node.executeGeneric(frame);
@@ -28,5 +30,13 @@ public class IfNode extends AstNode {
         } else {
             return "";
         }
+    }
+
+    public AstNode getCondition() {
+        return condition;
+    }
+
+    public AstNode[] getBody() {
+        return body;
     }
 }

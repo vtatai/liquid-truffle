@@ -30,25 +30,37 @@ public class LiquidParserFacade {
     public LiquidRootNode parse(LiquidLanguage language, Reader reader) {
         return new LiquidRootNode(language, parseNodes(reader).toArray(new AstNode[0]));
     }
-    
-    public List<AstNode> parseNodes(Reader reader) {
+
+    protected List<AstNode> parseNodes(Reader reader) {
         tokenStream = new Lexer(reader);
+        return parseNodes();
+    }
+
+    private List<AstNode> parseNodes() {
         List<AstNode> nodes = new ArrayList<>();
         while (tokenStream.hasNext()) {
-            if (check(TokenType.TEXT)) {
-                nodes.add(new TextNode(advance().lexeme()));
-            } else if (match(TokenType.OBJECT_OPEN)) {
-                nodes.add(parseObject());
-            } else if (match(TokenType.TAG_OPEN)) {
-                nodes.add(parseTag());
-                expect(TokenType.TAG_CLOSE, "Expected '%}'");
-            } else if (match(TokenType.EOF)) {
+            if (check(TokenType.EOF)) {
                 break;
-            } else {
-                throw new LiquidParserException("Found extraneous token when parsing " + tokenStream.advance());
             }
+            nodes.add(parseNode());
         }
         return nodes;
+    }
+
+    /**
+     * Always call this AFTER having advanced token
+     */
+    private AstNode parseNode() {
+        if (match(TokenType.TEXT)) {
+            return new TextNode(lastConsumedToken.lexeme());
+        } else if (match(TokenType.OBJECT_OPEN)) {
+            return parseObject();
+        } else if (match(TokenType.TAG_OPEN)) {
+            return parseTag();
+        } else {
+            throw new LiquidParserException("Found extraneous token when parsing " + tokenStream.peek(),
+                    tokenStream.peek());
+        }
     }
 
     public LiquidRootNode parse(LiquidLanguage language, String src) {
@@ -123,53 +135,36 @@ public class LiquidParserFacade {
     private AstNode parseTag() {
         String kw = ident();
         if (kw.isBlank()) {
-            return null;
+            throw new LiquidParserException("Expecting a tag command, but found none");
         }
         if ("if".equals(kw)) {
-            String varName = ident();
-            expect(TokenType.TAG_CLOSE, "Expected '%}' after if condition");
-            List<AstNode> body = new ArrayList<>();
-            while (tokenStream.hasNext()) {
-                if (check(TokenType.TAG_OPEN)) {
-                    // Use lookahead to check if this is an endif
-                    Token[] lookahead = tokenStream.lookAhead(3);
-                    if (lookahead.length >= 3 && 
-                        lookahead[0].type() == TokenType.TAG_OPEN &&
-                        lookahead[1].type() == TokenType.IDENT && 
-                        lookahead[1].lexeme().equals("endif") &&
-                        lookahead[2].type() == TokenType.TAG_CLOSE) {
-                        // This is an endif, consume it and break
-                        advance(); // consume TAG_OPEN
-                        advance(); // consume "endif"
-                        advance(); // consume TAG_CLOSE
-                        break;
-                    } else {
-                        // This is not an endif, parse it as content
-                        if (check(TokenType.TEXT)) {
-                            body.add(new TextNode(advance().lexeme()));
-                        } else if (match(TokenType.OBJECT_OPEN)) {
-                            body.add(parseObject());
-                            expect(TokenType.OBJECT_CLOSE, "Expected '}}'");
-                        } else if (match(TokenType.TAG_OPEN)) {
-                            AstNode nested = parseTag();
-                            expect(TokenType.TAG_CLOSE, "Expected '%}'");
-                            if (nested != null) body.add(nested);
-                        } else {
-                            body.add(new TextNode(advance().lexeme()));
-                        }
-                    }
-                } else if (check(TokenType.TEXT)) {
-                    body.add(new TextNode(advance().lexeme()));
-                } else if (match(TokenType.OBJECT_OPEN)) {
-                    body.add(parseObject());
-                    expect(TokenType.OBJECT_CLOSE, "Expected '}}'");
-                } else {
-                    body.add(new TextNode(advance().lexeme()));
-                }
-            }
-            return new IfNode(varName, body.toArray(new AstNode[0]));
+            return parseIfNode();
         }
         throw new LiquidParserException("Unsupported / unexpected tag command " + kw);
+    }
+
+    private IfNode parseIfNode() {
+        AstNode condition = parseCondition();
+        expect(TokenType.TAG_CLOSE, "Expected '%}' after if condition");
+
+        List<AstNode> body = new ArrayList<>();
+        while (!checkEndIf()) { // Advances token
+            body.add(parseNode());
+        }
+        expect(TokenType.TAG_OPEN, "Expected '{%' for endif");
+        expect(TokenType.KEYWORD, "Expected 'endif' for endif");
+        expect(TokenType.TAG_CLOSE, "Expected '%}' for endif");
+        return new IfNode(condition, body.toArray(new AstNode[0]));
+    }
+
+    private boolean checkEndIf() {
+        if (!(peek().type() == TokenType.TAG_OPEN)) {
+            return false;
+        }
+        Token nextToken = peek2();
+        return nextToken != null
+                && nextToken.type() == TokenType.KEYWORD
+                && "endif".equals(nextToken.lexeme());
     }
 
     private String ident() {
@@ -182,6 +177,17 @@ public class LiquidParserFacade {
             throw new RuntimeException("Expected identifier or keyword");
         }
         return t.lexeme();
+    }
+
+    private AstNode parseCondition() {
+        // TODO full support for logical expression
+        if (check(TokenType.STRING) || check(TokenType.NUMBER) || check(TokenType.KEYWORD)) {
+            return literal();
+        } else if (check(TokenType.IDENT)) {
+            return parseVariableRef();
+        } else {
+            throw new LiquidParserException("Expected condition (literal or variable) but got " + peek());
+        }
     }
 
     private AstNode literal() {
@@ -208,11 +214,12 @@ public class LiquidParserFacade {
     }
 
     private void expect(TokenType t, String msg) {
-        if (!check(t)) throw new RuntimeException(msg + " at token " + peek());
+        if (!check(t)) throw new LiquidParserException(msg, peek());
         advance();
     }
 
     private Token advance() {
+        System.out.println("Consumed: " + lastConsumedToken);
         lastConsumedToken = tokenStream.advance();
         return lastConsumedToken;
     }
@@ -220,8 +227,12 @@ public class LiquidParserFacade {
     private Token prev() {
         return lastConsumedToken;
     }
-    
+
     private Token peek() {
         return tokenStream.peek();
+    }
+
+    private Token peek2() {
+        return tokenStream.lookAhead(1)[0];
     }
 }

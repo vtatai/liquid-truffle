@@ -103,22 +103,38 @@ public class LiquidParserFacadeTest {
     public void canParseFilterWithNumericParameters() {
         LiquidParserFacade parser = new LiquidParserFacade();
         var nodes = parser.parseNodes(new StringReader("{{ items | limit: 5 }}"));
-        
+
         assertThat(nodes).hasSize(1);
-        
+
         LiquidObjectNode objectNode = assertAndCast(nodes.get(0), LiquidObjectNode.class);
         // With binary tree structure, the child should be a FilterNode
         FilterNode filterNode = assertAndCast(objectNode.getChild(), FilterNode.class);
         assertThat(filterNode.getFilterFunction().name()).isEqualTo("limit");
-        
+
         // The left child should be the variable
         VariableRefNode variableNode = assertAndCast(filterNode.getInputValue(), VariableRefNode.class);
         assertThat(variableNode.getName()).isEqualTo("items");
-        
+
         // The right children should contain the parameters
         assertThat(filterNode.getParameters().length).isEqualTo(1);
         NumberLiteralNode paramNode = assertAndCast(filterNode.getParameters()[0], NumberLiteralNode.class);
         assertThat(paramNode.getNumberValue()).isEqualTo(5);
+    }
+
+    @Test
+    public void canParseIfTag() {
+        LiquidParserFacade parser = new LiquidParserFacade();
+        var nodes = parser.parseNodes(new StringReader("{% if \"str\" %}hello world{% endif %}"));
+
+        assertThat(nodes).hasSize(1);
+        
+        IfNode ifNode = assertAndCast(nodes.getFirst(), IfNode.class);
+
+        StringLiteralNode condition = assertAndCast(ifNode.getCondition(), StringLiteralNode.class);
+        assertThat(condition.getStringValue()).isEqualTo("str");
+        
+        TextNode textNode = assertAndCast(ifNode.getBody()[0], TextNode.class);
+        assertThat(textNode.getTextContent()).isEqualTo("hello world");
     }
 
     private static <T extends AstNode> T assertAndCast(AstNode node, Class<T> clazz) {
