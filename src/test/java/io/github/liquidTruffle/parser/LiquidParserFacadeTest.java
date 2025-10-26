@@ -3,10 +3,10 @@ package io.github.liquidTruffle.parser;
 import io.github.liquidTruffle.parser.ast.AstNode;
 import io.github.liquidTruffle.parser.ast.nodes.*;
 import org.junit.jupiter.api.Test;
+
 import java.io.StringReader;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.filter;
 
 public class LiquidParserFacadeTest {
     @Test
@@ -58,7 +58,7 @@ public class LiquidParserFacadeTest {
         
         assertThat(nodes).hasSize(1);
         
-        LiquidObjectNode objectNode = assertAndCast(nodes.get(0), LiquidObjectNode.class);
+        LiquidObjectNode objectNode = assertAndCast(nodes.getFirst(), LiquidObjectNode.class);
 
         FilterNode filterNode = assertAndCast(objectNode.getChild(), FilterNode.class);
         assertThat(filterNode.getFilterFunction().name()).isEqualTo("capitalize");
@@ -81,7 +81,7 @@ public class LiquidParserFacadeTest {
         
         assertThat(nodes).hasSize(1);
         
-        LiquidObjectNode objectNode = assertAndCast(nodes.get(0), LiquidObjectNode.class);
+        LiquidObjectNode objectNode = assertAndCast(nodes.getFirst(), LiquidObjectNode.class);
         // With binary tree structure, the child should be a FilterNode
         FilterNode filterNode = assertAndCast(objectNode.getChild(), FilterNode.class);
         assertThat(filterNode.getFilterFunction().name()).isEqualTo("replace");
@@ -106,7 +106,7 @@ public class LiquidParserFacadeTest {
 
         assertThat(nodes).hasSize(1);
 
-        LiquidObjectNode objectNode = assertAndCast(nodes.get(0), LiquidObjectNode.class);
+        LiquidObjectNode objectNode = assertAndCast(nodes.getFirst(), LiquidObjectNode.class);
         // With binary tree structure, the child should be a FilterNode
         FilterNode filterNode = assertAndCast(objectNode.getChild(), FilterNode.class);
         assertThat(filterNode.getFilterFunction().name()).isEqualTo("limit");
