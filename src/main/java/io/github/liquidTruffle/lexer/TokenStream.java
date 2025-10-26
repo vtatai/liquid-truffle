@@ -24,12 +24,6 @@ public interface TokenStream {
     boolean hasNext();
     
     /**
-     * Returns the current position in the stream.
-     * @return current position
-     */
-    int getPosition();
-    
-    /**
      * Looks ahead n tokens without consuming them.
      * @param n number of tokens to look ahead
      * @return array of tokens, or null if not enough tokens available

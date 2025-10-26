@@ -93,11 +93,6 @@ public class Lexer implements TokenStream {
     }
     
     @Override
-    public int getPosition() {
-        return position;
-    }
-    
-    @Override
     public Token[] lookAhead(int n) {
         // For simplicity, we'll implement a basic lookahead
         // In a more sophisticated implementation, we might want to cache tokens

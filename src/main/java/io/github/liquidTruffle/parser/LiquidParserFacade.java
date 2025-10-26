@@ -17,15 +17,14 @@ import java.util.Map;
 public class LiquidParserFacade {
     private TokenStream tokenStream;
     private Token lastConsumedToken = null;
-    private Map<String, FilterFunction> filterFunctions = Map.of(
+    private final Map<String, FilterFunction> filterFunctions = Map.of(
             "append", new FilterFunction("append", params -> params[0].toString() + params[1].toString()),
             "capitalize", new FilterFunction("capitalize", params -> params[0].toString().toUpperCase()),
-            "limit", new FilterFunction("limit", params -> {
+            "limit", new FilterFunction("limit", _ -> {
                 throw new LiquidRuntimeException("Not implemented");
             }),
-            "replace", new FilterFunction("replace", params -> {
-                return params[0].toString().replace(params[1].toString(), params[2].toString());
-            })
+            "replace", new FilterFunction("replace",
+                    params -> params[0].toString().replace(params[1].toString(), params[2].toString()))
     );
 
     public LiquidRootNode parse(LiquidLanguage language, Reader reader) {
@@ -114,16 +113,6 @@ public class LiquidParserFacade {
         
         // Create a temporary FilterNode with null left child - this will be replaced in parseFilterChain
         return new FilterNode(filterFunction, null, params.toArray(new AstNode[0]));
-    }
-
-    private AstNode parseLiteralOrVariableRef() {
-        if (check(TokenType.IDENT)) {
-            return parseVariableRef();
-        }
-        if (check(TokenType.STRING) || check(TokenType.NUMBER)) {
-            return literal();
-        }
-        throw new LiquidParserException("Expected literal or variable ref but got " + peek());
     }
 
     private AstNode parseVariableRef() {
@@ -218,17 +207,6 @@ public class LiquidParserFacade {
         }
     }
 
-    private boolean matchSeq(TokenType a, TokenType b, TokenType c) {
-        if (check(a)) {
-            advance();
-            expect(b, "");
-            expect(c, "");
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     private void expect(TokenType t, String msg) {
         if (!check(t)) throw new RuntimeException(msg + " at token " + peek());
         advance();
@@ -241,11 +219,6 @@ public class LiquidParserFacade {
     
     private Token prev() {
         return lastConsumedToken;
-    }
-    
-    private Token prev(int back) {
-        // Note: This is a limitation of streaming - we can't look back
-        throw new UnsupportedOperationException("Cannot look back in streaming mode");
     }
     
     private Token peek() {

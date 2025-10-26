@@ -42,9 +42,9 @@ public class LexerTest {
         List<Token> tokens = lexer.lex();
         
         assertThat(tokens).hasSize(2);
-        assertThat(tokens.get(0).type()).isEqualTo(TokenType.TEXT);
-        assertThat(tokens.get(0).lexeme()).isEqualTo("Hello World");
-        assertThat(tokens.get(tokens.size() - 1).type()).isEqualTo(TokenType.EOF);
+        assertThat(tokens.getFirst().type()).isEqualTo(TokenType.TEXT);
+        assertThat(tokens.getFirst().lexeme()).isEqualTo("Hello World");
+        assertThat(tokens.getLast().type()).isEqualTo(TokenType.EOF);
     }
 
     @Test
